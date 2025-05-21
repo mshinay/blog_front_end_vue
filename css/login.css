@@ -1,0 +1,33 @@
+form.total-div{
+    display: grid;
+  grid-template-columns: 1fr; /* 单列布局 */
+  gap: 10px; /* 两个div之间的间距 */
+  max-width: 300px;
+}
+ .inputBox {
+    width: 100%;
+    box-sizing: border-box;
+  }
+.inputBox input{
+    width: 100%;
+}
+
+.input input {
+  width: 100%;
+  padding: 5px;
+  box-sizing: border-box; /* 包含padding在宽度内 */
+}
+
+  .tip{
+    width: 100%;
+    display: flex;
+    gap: 15px
+  }
+
+  .tip button{
+    flex: 1;
+    padding: 3px;
+    box-sizing: border-box;
+  }
+
+

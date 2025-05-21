@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>博客主页</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+
+
+        .articles {
+            padding: 30px;
+        }
+
+        .chapter {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .chapter:hover {
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .chapter h4 {
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+        }
+
+        .chapter p {
+            margin-top: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        a.chapter-link {
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
+    
+</head>
+<body>
+
+    <!-- 顶部导航栏 -->
+ <div id="header-container"></div>
+
+    <script src="../js/include-header.js"></script>
+
+    <!-- 文章列表区域 -->
+    <main class="articles">
+        <ul id="article-list" style="list-style-type: none; padding: 0;">
+            <!-- <li>
+                <a href="#article/1" class="chapter-link" data-id="1">
+                    <div class="chapter">
+                        <h4>标题 1</h4>
+                        <p>这里是文章简介内容预览……</p>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="#article/2" class="chapter-link" data-id="2">
+                    <div class="chapter">
+                        <h4>标题 2</h4>
+                        <p>这里是文章简介内容预览……</p>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="#article/3" class="chapter-link" data-id="3">
+                    <div class="chapter">
+                        <h4>标题 3</h4>
+                        <p>这里是文章简介内容预览……</p>
+                    </div>
+                </a>
+            </li>
+            <li>
+                <a href="#article/4" class="chapter-link" data-id="4">
+                    <div class="chapter">
+                        <h4>标题 4</h4>
+                        <p>这里是文章简介内容预览……</p>
+                    </div>
+                </a>
+            </li> -->
+        </ul>
+        <!-- 用于检测是否滚动到底 -->
+        <div id="scroll-sentinel"></div>
+    </main>
+<script src="../js/main.js"></script>
+</body>
+</html>

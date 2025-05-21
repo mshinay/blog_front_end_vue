@@ -1,0 +1,19 @@
+.inputBox{
+    display: flex;
+    flex-direction: column;
+    max-width: 300px;
+    gap: 
+}
+
+.inputBox input{
+    
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.inputBox button{
+    
+    width: 33%;
+    margin-top: 7px;
+     align-self: center;
+}

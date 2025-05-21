@@ -1,0 +1,56 @@
+<!-- public/components/header.html -->
+ <head>
+    <style>
+        .header {
+            background-color: #ffffff;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search input[type="text"] {
+            padding: 8px;
+            font-size: 14px;
+            width: 300px;
+        }
+
+        .search input[type="submit"] {
+            padding: 8px 12px;
+        }
+
+        .upload button {
+            margin-left: 20px;
+            padding: 8px 16px;
+        }
+
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+    </style>
+ </head>
+<header class="header">
+    <form class="search">
+        <input type="text" name="search" placeholder="请输入要查询的内容">
+        <input type="submit" value="搜索">
+    </form>
+
+    <div class="upload">
+        <button onclick="location.href='write.html'">发表</button>
+    </div>
+
+    <div class="user">
+        <img src="../img/user-64.png" alt="用户头像">
+        <button onclick="location.href='login.html'">登录</button>
+        <button onclick="location.href='register.html'">注册</button>
+    </div>
+</header>
