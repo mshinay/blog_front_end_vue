@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文章详情</title>
-    <link rel="stylesheet" href="../css/article.css">
+    <!-- <link rel="stylesheet" href="../css/article.css"> -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -83,23 +83,27 @@
     </style>
 </head>
 <body>
+        <!-- 顶部导航栏 -->
+ <div id="header-container"></div>
+
+    <script src="../js/include-header.js"></script>
 
     <!-- 标题区域 -->
-    <div class="title-div">
-        <h1>文章标题示例</h1>
-    </div>
+  <div class="title-div">
+    <h1 id="article-title">文章标题加载中...</h1>
+  </div>
 
-    <!-- 作者信息 -->
-    <div class="author-div">
-        作者：<a href="/user/123">用户123</a> | 发布时间：2024-05-18
-    </div>
+  <!-- 作者信息 -->
+  <div class="author-div" id="article-meta">
+    加载中...
+  </div>
 
-    <!-- 主体内容 -->
-    <div class="main-div">
-        <p>这里是正文段落 1。文章内容支持换行和段落格式。</p>
-        <p>这里是正文段落 2。你可以用 Markdown 转 HTML 后填入这里。</p>
-        <p>这里是正文段落 3。后续可以支持代码块、图片等。</p>
-    </div>
+  <!-- 主体内容（富文本 HTML 将插入这里） -->
+  <div class="main-div" id="article-content">
+    正文加载中...
+  </div>
+
+  <script src="../js/detail.js"></script>
 
     <!-- 评论输入区域 -->
     <div class="comment-div">

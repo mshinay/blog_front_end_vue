@@ -5,12 +5,29 @@ document.addEventListener("DOMContentLoaded", function (){
         window.location.href = "http://127.0.0.1:5500/front-end/html/login.html";
         return;
         }
+ 
+         // 初始化 Quill
+    const quill = new Quill('#editor', {
+        theme: 'snow',
+        placeholder: '请输入文章内容...',
+        modules: {
+            toolbar: [
+                [{ header: [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline'],
+                [{ list: 'ordered' }, { list: 'bullet' }],
+                ['link', 'image'],
+                ['clean']
+            ]
+        }
+    });
+
+
     const form = document.querySelector("#article-form");
      form.addEventListener("submit", function (e){
         e.preventDefault(); // 阻止表单默认提交行为
 
         const title = document.querySelector('input[name="title"]').value;
-        const content = document.querySelector('textarea[name="content"]').value;
+        const content = quill.root.innerHTML;
         
 
         fetch("http://localhost:8080/article/upload",{

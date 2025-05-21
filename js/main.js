@@ -30,7 +30,7 @@ async function loadArticles() {
     data.forEach(article => {
       const li = document.createElement('li');
       li.innerHTML = `
-        <a href="#article/${article.id}" class="chapter-link">
+        <a href="article.html?articleId=${article.id}" class="chapter-link">
           <div class="chapter">
             <h4>${article.title}</h4>
             <p>${article.summary}</p>
