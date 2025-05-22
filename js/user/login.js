@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // location.href = "/dashboard.html"; // 跳转页面
                 localStorage.setItem("jwt",data.data.jwtToken)
 
-                window.location.href="http://127.0.0.1:5500/front-end/ai-html/main.html"
+                window.location.href="http://127.0.0.1:5500/ai-html/main.html"
             } else {
                 alert("登录失败: " + data.msg);
             }

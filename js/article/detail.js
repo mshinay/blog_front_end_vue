@@ -1,5 +1,7 @@
+import {getArticleIdFromUrl} from "../util/tool.js"
+
 document.addEventListener("DOMContentLoaded", async () => {
-  const articleId = getArticleIdFromUrl(); // 假设 URL 是类似 /article.html?id=123
+  const articleId = getArticleIdFromUrl("articleId"); // 假设 URL 是类似 /article.html?id=123
   const token = localStorage.getItem("jwt");
 
   try {
@@ -28,7 +30,3 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-function getArticleIdFromUrl() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("articleId");
-}
