@@ -18,10 +18,10 @@ document.addEventListener("DOMContentLoaded", function () {
         .then(response => response.json())
         .then(data => {
             if (data.code === 1) {
-                alert("登录成功，欢迎 " + data.data.name);
+                alert("登录成功，欢迎 " + data.data.username);
                 // location.href = "/dashboard.html"; // 跳转页面
                 localStorage.setItem("jwt",data.data.jwtToken)
-
+                localStorage.setItem("user",JSON.stringify(data.data))
                 window.location.href="http://127.0.0.1:5500/ai-html/main.html"
             } else {
                 alert("登录失败: " + data.msg);

@@ -1,0 +1,51 @@
+    .header {
+            background-color: #ffffff;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search input[type="text"] {
+            padding: 8px;
+            font-size: 14px;
+            width: 300px;
+        }
+
+        .search input[type="submit"] {
+            padding: 8px 12px;
+        }
+
+        .upload button {
+            margin-left: 20px;
+            padding: 8px 16px;
+        }
+
+        .user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+
+        #auth-modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background-color: rgba(0,0,0,0.4);
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 6px;
+  width: 300px;
+}

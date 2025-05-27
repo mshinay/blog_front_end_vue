@@ -1,3 +1,4 @@
+console.log("✅ main.js 被加载并执行");
 let page = 1;
 const pageSize = 10;
 let loading = false;  // 防止重复请求
@@ -9,6 +10,7 @@ async function loadArticles() {
       if (loading || allLoaded) return;
         loading = true;
  const token = localStorage.getItem("jwt");
+ //console.log("✅ main.js的"+token)
          try {
     const response = await fetch(`http://localhost:8080/article/list?page=${page}&pageSize=${pageSize}`,{
            headers: {

@@ -1,0 +1,86 @@
+<style>
+.account-setting-div {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.account-setting-div div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.account-setting-div label {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.account-setting-div input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.account-setting-div button {
+  align-self: flex-start;
+  padding: 0.4rem 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.account-setting-div #avatar-button{
+  background-color: transparent;
+}
+
+.account-setting-div button:hover {
+  background-color: #0056b3;
+}
+
+#user-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 1px solid #ccc;
+}
+</style>
+
+<div class="account-setting-div">
+  <div>
+    <label>账号信息</label>
+  </div>
+  <div>
+    <label for="profile">头像</label>
+    <input type="file" id="profile" name="profile" accept="image/*" style="display: none;">
+    <button id="avatar-button">
+      <img src="../../img/user-64.png" alt="用户头像" id="user-avatar-setting">
+    </button>
+  </div>
+  <div>
+    <label for="username">用户名</label>
+    <input type="text" name="username" id="username-setting" placeholder="请输入用户名">
+    <button class="submit-btn" data-field="username">提交</button>
+  </div>
+  <div>
+    <label for="email">邮箱</label>
+    <input type="text" name="email" id="email-setting" placeholder="请输入邮箱">
+    <button class="submit-btn" data-field="email">提交</button>
+  </div>
+  <div>
+    <label for="password">密码</label>
+    <input type="password" name="password" placeholder="请输入密码">
+    <button class="submit-btn" data-field="password">提交</button>
+  </div>
+</div>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+
+  /* 容器使用 Flex 实现左右布局 */
+  .main-div {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .side-bar-div {
+    width: 200px;
+    background-color: #f0f0f0;
+    border-right: 1px solid #ccc;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  .side-bar-div div {
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #fff;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+  }
+
+  .side-bar-div div:hover {
+    background-color: #e0e0e0;
+  }
+
+  .setting-detail-div {
+    flex: 1;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+</style>
+
+
+
+</head>
+<body>
+        <!-- 顶部导航栏 -->
+ <div id="header-container"></div>
+
+    <script src="../js/util/include-header.js"></script>
+     <!-- 检验用户角色，动态显示 文章管理 和 评论管理 -->
+<script src="../js/user/dynamic-load.js"></script>
+<div class="main-div">
+    <div class="side-bar-div">
+        <div class="account-setting">账号设置</div>
+        <div class="my-blogs">我的博客</div>
+        <div class="my-comments">我的评论</div>
+        <div class="article-management"  style="display: none;">文章管理</div>
+        <div class="comment-management"  style="display: none;">评论管理</div>
+        
+    </div>
+
+    <div class="setting-detail-div">
+        
+         
+    </div>
+</div>
+<script type="module" src="../js/user/person.js"></script> 
+</body>
+</html>
