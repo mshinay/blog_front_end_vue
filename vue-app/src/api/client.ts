@@ -1,4 +1,19 @@
 import axios from 'axios'
+import type { AxiosError, AxiosResponse } from 'axios'
+
+import type { ApiResponse } from '@/types/api'
+
+export class AppError extends Error {
+  status?: number
+  code?: number
+
+  constructor(message: string, options: { status?: number; code?: number } = {}) {
+    super(message)
+    this.name = 'AppError'
+    this.status = options.status
+    this.code = options.code
+  }
+}
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -16,15 +31,46 @@ apiClient.interceptors.request.use((config) => {
 })
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const payload = response.data as ApiResponse<unknown> | undefined
+
+    if (payload && typeof payload.code === 'number' && payload.code !== 1) {
+      throw new AppError(payload.msg || 'Request failed', {
+        code: payload.code,
+        status: response.status,
+      })
+    }
+
+    return response
+  },
   (error) => {
-    if (error.response?.status === 401) {
+    const axiosError = error as AxiosError<ApiResponse<unknown>>
+
+    if (axiosError.response?.status === 401) {
       localStorage.removeItem('jwt')
       localStorage.removeItem('user')
     }
 
-    return Promise.reject(error)
+    if (error instanceof AppError) {
+      return Promise.reject(error)
+    }
+
+    const status = axiosError.response?.status
+    const message =
+      axiosError.response?.data?.msg ||
+      axiosError.message ||
+      'Network error, please try again later.'
+
+    return Promise.reject(
+      new AppError(message, {
+        status,
+      }),
+    )
   },
 )
+
+export function unwrapData<T>(response: AxiosResponse<ApiResponse<T>>): T {
+  return response.data.data
+}
 
 export default apiClient

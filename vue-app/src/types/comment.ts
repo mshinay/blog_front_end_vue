@@ -3,6 +3,7 @@ export interface CommentItem {
   content: string
   articleId: number
   userId: number
+  userName?: string
   username?: string
   createTime?: string
   status?: number

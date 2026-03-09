@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { resolveGuardRedirect } from '@/router/guards'
 import { useAuthStore } from '@/stores/auth'
+import AdminArticlesView from '@/views/AdminArticlesView.vue'
+import AdminCommentsView from '@/views/AdminCommentsView.vue'
 import ArticleDetailView from '@/views/ArticleDetailView.vue'
 import EditArticleView from '@/views/EditArticleView.vue'
 import LoginView from '@/views/LoginView.vue'
@@ -23,25 +26,20 @@ const router = createRouter({
     { path: '/upload', name: 'upload', component: UploadArticleView, meta: { requiresAuth: true } },
     { path: '/edit-article/:articleId', name: 'edit-article', component: EditArticleView, props: true, meta: { requiresAuth: true } },
     { path: '/person', name: 'person-center', component: PersonCenterView, meta: { requiresAuth: true } },
+    { path: '/admin/articles', name: 'admin-articles', component: AdminArticlesView, meta: { requiresAuth: true, requiresAdmin: true } },
+    { path: '/admin/comments', name: 'admin-comments', component: AdminCommentsView, meta: { requiresAuth: true, requiresAdmin: true } },
     { path: '/user/:userId', name: 'user-page', component: UserPageView, props: true },
   ],
 })
 
 router.beforeEach((to) => {
   const authStore = useAuthStore()
+  authStore.hydrate()
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    return {
-      name: 'login',
-      query: { redirect: to.fullPath },
-    }
-  }
-
-  if (authStore.isAuthenticated && (to.name === 'login' || to.name === 'register')) {
-    return { name: 'main' }
-  }
-
-  return true
+  return resolveGuardRedirect(to, {
+    isAuthenticated: authStore.isAuthenticated,
+    isAdmin: authStore.isAdmin,
+  })
 })
 
 export default router

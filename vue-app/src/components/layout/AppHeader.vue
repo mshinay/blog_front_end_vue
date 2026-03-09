@@ -8,9 +8,12 @@
         <RouterLink to="/search">Search</RouterLink>
         <RouterLink to="/upload">Write</RouterLink>
         <RouterLink to="/person">Profile</RouterLink>
+        <RouterLink v-if="authStore.isAdmin" to="/admin/articles">Admin Articles</RouterLink>
+        <RouterLink v-if="authStore.isAdmin" to="/admin/comments">Admin Comments</RouterLink>
       </nav>
 
       <div class="auth-actions">
+        <span v-if="authStore.isAuthenticated" class="welcome">Hi, {{ authStore.currentUser?.username }}</span>
         <RouterLink v-if="!authStore.isAuthenticated" class="btn ghost" to="/login">Log in</RouterLink>
         <RouterLink v-if="!authStore.isAuthenticated" class="btn" to="/register">Sign up</RouterLink>
         <button v-else class="btn" type="button" @click="handleLogout">Log out</button>
@@ -28,7 +31,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 function handleLogout(): void {
-  authStore.clearAuth()
+  authStore.logout()
   router.push({ name: 'login' })
 }
 </script>
@@ -79,7 +82,13 @@ function handleLogout(): void {
 
 .auth-actions {
   display: flex;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.welcome {
+  color: var(--color-muted);
+  font-size: 0.9rem;
 }
 
 .btn {

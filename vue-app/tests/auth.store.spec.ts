@@ -1,12 +1,28 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 import { useAuthStore } from '@/stores/auth'
+
+const { loginMock, registerMock } = vi.hoisted(() => {
+  return {
+    loginMock: vi.fn(),
+    registerMock: vi.fn(),
+  }
+})
+
+vi.mock('@/api/modules/user', () => {
+  return {
+    login: loginMock,
+    register: registerMock,
+  }
+})
 
 describe('auth store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
+    loginMock.mockReset()
+    registerMock.mockReset()
   })
 
   it('sets auth and persists to localStorage', () => {
@@ -35,5 +51,53 @@ describe('auth store', () => {
     expect(store.isAuthenticated).toBe(false)
     expect(localStorage.getItem('jwt')).toBeNull()
     expect(localStorage.getItem('user')).toBeNull()
+  })
+
+  it('hydrates from localStorage with admin role', () => {
+    localStorage.setItem('jwt', 'stored-token')
+    localStorage.setItem('user', JSON.stringify({ id: 3, username: 'admin', role: 0 }))
+
+    const store = useAuthStore()
+
+    expect(store.isAuthenticated).toBe(true)
+    expect(store.isAdmin).toBe(true)
+    expect(store.currentUser?.username).toBe('admin')
+  })
+
+  it('loginWithPassword stores jwtToken from api', async () => {
+    loginMock.mockResolvedValueOnce({
+      id: 10,
+      username: 'demo-login',
+      role: 1,
+      jwtToken: 'jwt-login',
+    })
+    const store = useAuthStore()
+
+    await store.loginWithPassword({ username: 'demo', password: '123456' })
+
+    expect(store.isAuthenticated).toBe(true)
+    expect(localStorage.getItem('jwt')).toBe('jwt-login')
+    expect(loginMock).toHaveBeenCalledOnce()
+  })
+
+  it('registerAndLogin stores jwtToken from api', async () => {
+    registerMock.mockResolvedValueOnce({
+      id: 11,
+      username: 'demo-register',
+      role: 0,
+      jwtToken: 'jwt-register',
+    })
+    const store = useAuthStore()
+
+    await store.registerAndLogin({
+      username: 'demo-register',
+      email: 'demo@example.com',
+      password: '123456',
+    })
+
+    expect(store.isAuthenticated).toBe(true)
+    expect(store.isAdmin).toBe(true)
+    expect(localStorage.getItem('jwt')).toBe('jwt-register')
+    expect(registerMock).toHaveBeenCalledOnce()
   })
 })
