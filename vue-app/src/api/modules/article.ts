@@ -46,3 +46,23 @@ export function updateArticle(
 export function deleteArticle(articleId: string | number): Promise<void> {
   return apiClient.delete<ApiResponse<null>>(`/article/${articleId}`).then(() => undefined)
 }
+
+export function getAdminArticleList(page: number, pageSize: number): Promise<PageResult<Article>> {
+  return apiClient
+    .get<ApiResponse<PageResult<Article>>>('/article/admin/list', {
+      params: { page, pageSize },
+    })
+    .then(unwrapData)
+}
+
+export function searchAdminArticles(
+  keyword: string,
+  page: number,
+  pageSize: number,
+): Promise<PageResult<Article>> {
+  return apiClient
+    .get<ApiResponse<PageResult<Article>>>('/article/admin/search', {
+      params: { keyword, page, pageSize },
+    })
+    .then(unwrapData)
+}

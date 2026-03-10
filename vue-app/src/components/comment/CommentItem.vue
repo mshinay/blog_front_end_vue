@@ -20,9 +20,9 @@
     <div v-else>
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="content" v-html="renderedHtml" />
-      <div v-if="editable" class="actions">
-        <button type="button" class="ghost" @click="startEdit">Edit</button>
-        <button type="button" class="danger" :disabled="isDeleting" @click="emit('delete', comment.id)">
+      <div v-if="canEdit || canDelete" class="actions">
+        <button v-if="canEdit" type="button" class="ghost" @click="startEdit">Edit</button>
+        <button v-if="canDelete" type="button" class="danger" :disabled="isDeleting" @click="emit('delete', comment.id)">
           {{ isDeleting ? 'Deleting...' : 'Delete' }}
         </button>
       </div>
@@ -40,12 +40,14 @@ import type { CommentItem as CommentModel } from '@/types/comment'
 const props = withDefaults(
   defineProps<{
     comment: CommentModel
-    editable?: boolean
+    canEdit?: boolean
+    canDelete?: boolean
     isSaving?: boolean
     isDeleting?: boolean
   }>(),
   {
-    editable: false,
+    canEdit: false,
+    canDelete: false,
     isSaving: false,
     isDeleting: false,
   },

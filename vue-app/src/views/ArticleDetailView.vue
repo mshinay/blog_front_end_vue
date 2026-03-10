@@ -14,13 +14,24 @@
           </p>
         </div>
 
-        <RouterLink
-          v-if="canEditArticle"
-          class="edit-link"
-          :to="`/edit-article/${article.id}`"
-        >
-          Edit Article
-        </RouterLink>
+        <div class="action-group">
+          <RouterLink
+            v-if="canEditArticlePermission"
+            class="edit-link"
+            :to="`/edit-article/${article.id}`"
+          >
+            Edit Article
+          </RouterLink>
+          <button
+            v-if="canDeleteArticlePermission"
+            type="button"
+            class="delete-btn"
+            :disabled="isDeleting"
+            @click="handleDeleteArticle"
+          >
+            {{ isDeleting ? 'Deleting...' : 'Delete Article' }}
+          </button>
+        </div>
       </header>
 
       <!-- eslint-disable-next-line vue/no-v-html -->
@@ -33,31 +44,29 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { AppError } from '@/api/client'
-import { getArticleDetail } from '@/api/modules/article'
+import { deleteArticle, getArticleDetail } from '@/api/modules/article'
 import CommentList from '@/components/comment/CommentList.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useAuthStore } from '@/stores/auth'
 import type { Article } from '@/types/article'
+import { canDeleteArticle, canEditArticle } from '@/utils/permissions'
 import { renderMarkdown } from '@/utils/markdown'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 
 const article = ref<Article | null>(null)
 const isLoading = ref(false)
+const isDeleting = ref(false)
 const errorMessage = ref('')
 
 const articleHtml = computed(() => renderMarkdown(article.value?.content ?? ''))
-const canEditArticle = computed(() => {
-  if (!article.value || !authStore.currentUser) {
-    return false
-  }
-
-  return authStore.currentUser.id === article.value.authorId
-})
+const canEditArticlePermission = computed(() => canEditArticle(authStore.currentUser, article.value))
+const canDeleteArticlePermission = computed(() => canDeleteArticle(authStore.currentUser, article.value))
 
 async function loadArticleDetail(): Promise<void> {
   const articleId = route.params.articleId
@@ -79,6 +88,32 @@ async function loadArticleDetail(): Promise<void> {
     }
   } finally {
     isLoading.value = false
+  }
+}
+
+async function handleDeleteArticle(): Promise<void> {
+  if (!article.value) {
+    return
+  }
+
+  if (!confirm('Are you sure you want to delete this article?')) {
+    return
+  }
+
+  isDeleting.value = true
+  errorMessage.value = ''
+
+  try {
+    await deleteArticle(article.value.id)
+    await router.push('/main')
+  } catch (error) {
+    if (error instanceof AppError) {
+      errorMessage.value = error.message
+    } else {
+      errorMessage.value = 'Failed to delete article.'
+    }
+  } finally {
+    isDeleting.value = false
   }
 }
 
@@ -111,6 +146,12 @@ watch(
   gap: 1rem;
 }
 
+.action-group {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
 h1 {
   margin: 0;
   font-family: var(--font-display);
@@ -131,12 +172,25 @@ h1 {
 }
 
 .edit-link {
-  align-self: flex-start;
   text-decoration: none;
   border-radius: 999px;
   border: 1px solid var(--color-border-strong);
   color: var(--color-text);
   padding: 0.35rem 0.8rem;
+}
+
+.delete-btn {
+  border: 0;
+  border-radius: 999px;
+  background: #ffebe9;
+  color: #9a2518;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+}
+
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .content {

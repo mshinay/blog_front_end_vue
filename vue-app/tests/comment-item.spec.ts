@@ -30,7 +30,7 @@ describe('CommentItem', () => {
   it('emits delete when delete button clicked', async () => {
     const wrapper = mount(CommentItem, {
       props: {
-        editable: true,
+        canDelete: true,
         comment: {
           id: 7,
           articleId: 1,
@@ -51,5 +51,30 @@ describe('CommentItem', () => {
     await wrapper.get('button.danger').trigger('click')
 
     expect(wrapper.emitted('delete')?.[0]).toEqual([7])
+  })
+
+  it('does not render edit button without canEdit', () => {
+    const wrapper = mount(CommentItem, {
+      props: {
+        canDelete: true,
+        comment: {
+          id: 8,
+          articleId: 1,
+          userId: 2,
+          userName: 'demo',
+          content: 'sample',
+        },
+      },
+      global: {
+        stubs: {
+          RouterLink: {
+            template: '<a><slot /></a>',
+          },
+        },
+      },
+    })
+
+    expect(wrapper.find('button.ghost').exists()).toBe(false)
+    expect(wrapper.find('button.danger').exists()).toBe(true)
   })
 })

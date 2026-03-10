@@ -32,3 +32,32 @@ export function updateComment(payload: Required<Pick<CommentMutationPayload, 'id
 export function deleteComment(commentId: string | number): Promise<void> {
   return apiClient.delete<ApiResponse<null>>(`/comment/${commentId}`).then(() => undefined)
 }
+
+export interface AdminCommentGroup {
+  articleId: number
+  articleTitle: string
+  comments: CommentItem[]
+}
+
+export function getAdminCommentList(
+  page: number,
+  pageSize: number,
+): Promise<PageResult<AdminCommentGroup>> {
+  return apiClient
+    .get<ApiResponse<PageResult<AdminCommentGroup>>>('/comment/admin/list', {
+      params: { page, pageSize },
+    })
+    .then(unwrapData)
+}
+
+export function searchAdminComments(
+  keyword: string,
+  page: number,
+  pageSize: number,
+): Promise<PageResult<AdminCommentGroup>> {
+  return apiClient
+    .get<ApiResponse<PageResult<AdminCommentGroup>>>('/comment/admin/search', {
+      params: { keyword, page, pageSize },
+    })
+    .then(unwrapData)
+}

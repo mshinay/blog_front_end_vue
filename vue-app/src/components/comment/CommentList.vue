@@ -21,7 +21,8 @@
         v-for="comment in comments"
         :key="comment.id"
         :comment="comment"
-        :editable="isCommentOwner(comment.userId)"
+        :can-edit="canCurrentUserEdit(comment)"
+        :can-delete="canCurrentUserDelete(comment)"
         :is-saving="updatingId === comment.id"
         :is-deleting="deletingId === comment.id"
         @update="updateExistingComment"
@@ -50,12 +51,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { AppError } from '@/api/client'
-import {
-  createComment,
-  deleteComment,
-  getCommentList,
-  updateComment,
-} from '@/api/modules/comment'
+import { createComment, deleteComment, getCommentList, updateComment } from '@/api/modules/comment'
 import CommentEditor from '@/components/comment/CommentEditor.vue'
 import CommentItem from '@/components/comment/CommentItem.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
@@ -63,6 +59,7 @@ import LoadingState from '@/components/common/LoadingState.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 import { useAuthStore } from '@/stores/auth'
 import type { CommentItem as CommentModel } from '@/types/comment'
+import { canDeleteComment, canEditComment } from '@/utils/permissions'
 
 const props = defineProps<{
   articleId: number
@@ -90,8 +87,12 @@ function resetState(): void {
   errorMessage.value = ''
 }
 
-function isCommentOwner(userId: number): boolean {
-  return authStore.currentUser?.id === userId
+function canCurrentUserEdit(comment: CommentModel): boolean {
+  return canEditComment(authStore.currentUser, comment)
+}
+
+function canCurrentUserDelete(comment: CommentModel): boolean {
+  return canDeleteComment(authStore.currentUser, comment)
 }
 
 async function loadMoreComments(): Promise<void> {
