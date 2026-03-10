@@ -4,6 +4,8 @@ import App from '@/App.vue'
 import router from '@/router'
 import '@/styles/base.css'
 import '@/styles/tokens.css'
+import 'bytemd/dist/index.css'
+import 'highlight.js/styles/github.css'
 
 const app = createApp(App)
 

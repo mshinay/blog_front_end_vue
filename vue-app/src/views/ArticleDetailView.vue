@@ -56,7 +56,7 @@ const canEditArticle = computed(() => {
     return false
   }
 
-  return authStore.currentUser.id === article.value.authorId || authStore.isAdmin
+  return authStore.currentUser.id === article.value.authorId
 })
 
 async function loadArticleDetail(): Promise<void> {
