@@ -100,4 +100,40 @@ describe('auth store', () => {
     expect(localStorage.getItem('jwt')).toBe('jwt-register')
     expect(registerMock).toHaveBeenCalledOnce()
   })
+
+  it('updateCurrentUser keeps existing token when jwtToken absent', () => {
+    const store = useAuthStore()
+
+    store.setAuth('token-3', {
+      id: 12,
+      username: 'before',
+    })
+
+    store.updateCurrentUser({
+      id: 12,
+      username: 'after',
+      email: 'after@example.com',
+    })
+
+    expect(store.currentUser?.username).toBe('after')
+    expect(localStorage.getItem('jwt')).toBe('token-3')
+  })
+
+  it('updateCurrentUser replaces token when jwtToken provided', () => {
+    const store = useAuthStore()
+
+    store.setAuth('token-old', {
+      id: 13,
+      username: 'user13',
+    })
+
+    store.updateCurrentUser({
+      id: 13,
+      username: 'user13',
+      jwtToken: 'token-new',
+    })
+
+    expect(localStorage.getItem('jwt')).toBe('token-new')
+    expect(store.token).toBe('token-new')
+  })
 })

@@ -66,3 +66,28 @@ export function searchAdminArticles(
     })
     .then(unwrapData)
 }
+
+export function getUserArticleList(
+  authorId: string | number,
+  page: number,
+  pageSize: number,
+): Promise<PageResult<Article>> {
+  return apiClient
+    .get<ApiResponse<PageResult<Article>>>('/article/user', {
+      params: { authorId, page, pageSize },
+    })
+    .then(unwrapData)
+}
+
+export function searchUserArticles(
+  authorId: string | number,
+  keyword: string,
+  page: number,
+  pageSize: number,
+): Promise<PageResult<Article>> {
+  return apiClient
+    .get<ApiResponse<PageResult<Article>>>('/article/user/search', {
+      params: { authorId, keyword, page, pageSize },
+    })
+    .then(unwrapData)
+}

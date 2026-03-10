@@ -50,6 +50,18 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(USER_KEY)
   }
 
+  function updateCurrentUser(nextUser: User): void {
+    user.value = nextUser
+
+    const nextToken = nextUser.jwtToken ?? token.value
+    if (nextToken) {
+      token.value = nextToken
+      localStorage.setItem(JWT_KEY, nextToken)
+    }
+
+    localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
+  }
+
   function resolveToken(nextUser: User): string {
     if (!nextUser.jwtToken) {
       throw new Error('Missing jwtToken in auth response')
@@ -96,6 +108,7 @@ export const useAuthStore = defineStore('auth', () => {
     hydrate,
     setAuth,
     clearAuth,
+    updateCurrentUser,
     loginWithPassword,
     registerAndLogin,
     logout,

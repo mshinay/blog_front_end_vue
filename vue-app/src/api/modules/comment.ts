@@ -61,3 +61,28 @@ export function searchAdminComments(
     })
     .then(unwrapData)
 }
+
+export function getUserCommentList(
+  userId: string | number,
+  page: number,
+  pageSize: number,
+): Promise<PageResult<CommentItem>> {
+  return apiClient
+    .get<ApiResponse<PageResult<CommentItem>>>('/comment/user', {
+      params: { userId, page, pageSize },
+    })
+    .then(unwrapData)
+}
+
+export function searchUserComments(
+  userId: string | number,
+  keyword: string,
+  page: number,
+  pageSize: number,
+): Promise<PageResult<CommentItem>> {
+  return apiClient
+    .get<ApiResponse<PageResult<CommentItem>>>('/comment/user/search', {
+      params: { userId, keyword, page, pageSize },
+    })
+    .then(unwrapData)
+}
