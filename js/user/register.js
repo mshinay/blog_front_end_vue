@@ -1,36 +1,56 @@
-document.addEventListener("DOMContentLoaded", function (){
-    const form = document.querySelector("form.inputBox");
-     form.addEventListener("submit", function (e){
-        e.preventDefault(); // 阻止表单默认提交行为
+document.addEventListener("DOMContentLoaded", () => {
+  const usernameInput = document.getElementById("register-username");
+  const emailInput = document.getElementById("register-email");
+  const passwordInput = document.getElementById("register-password");
+  const confirmInput = document.getElementById("confirm-password");
+  const submitBtn = document.getElementById("register-submit");
 
-        const username = document.querySelector('input[name="username"]').value;
-        const password = document.querySelector('input[name="password"]').value;
-        const email = document.querySelector('input[name="email"]').value;
+  submitBtn.addEventListener("click", async () => {
+    const username = usernameInput.value.trim();
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+    const confirmPassword = confirmInput.value.trim();
 
-        fetch("http://localhost:8080/user/register",{
+    if (!username || !email || !password || !confirmPassword) {
+      alert("请填写所有字段");
+      return;
+    }
 
-            method: "post",
-             headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                username: username,
-                password: password,
-                email: email
-            })
+    if (password !== confirmPassword) {
+      alert("两次输入的密码不一致");
+      return;
+    }
 
+    try {
+      const response = await fetch("http://localhost:8080/user/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password
         })
-         .then(response => response.json())
-        .then(data => {
-            if (data.code === 1) {
-                alert("注册成功");
-                // location.href = "/dashboard.html"; // 跳转页面
-            } else {
-                alert("注册失败: " + data.msg);
-            }
-        })
-        .catch(error => {
-            console.error("请求失败", error);
-        });
-    });
-})
+      });
+
+      const data = await response.json();
+
+      if (data.code === 1) {
+        alert("注册成功！");
+        console.log(data.data);
+        
+        localStorage.setItem("jwt", data.data.jwtToken);
+        localStorage.setItem("user", JSON.stringify(data.data));
+
+        // 注册成功后跳转
+        window.location.href = "/main.html";  // 或跳转到首页、登录页等
+      } else {
+        alert(`注册失败：${data.msg || "服务器错误"}`);
+      }
+    } catch (err) {
+      console.error("注册请求异常", err);
+      alert("注册失败，请检查网络或稍后重试");
+    }
+  });
+});

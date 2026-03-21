@@ -12,9 +12,7 @@ export function getArticleIdFromUrl(para) {
  *        - components/account-setting.js
  */
 
-const initMap = {};
 export async function loadComponent(componentName) {
-    
   const htmlPath = `./components/${componentName}.html`;
   const container = document.querySelector(".setting-detail-div");
 
@@ -24,15 +22,10 @@ export async function loadComponent(componentName) {
     const html = await res.text();
     container.innerHTML = html;
 
-    
-
-    // 如果组件尚未初始化（即JS未执行过）
-    if (!initMap[componentName]) {
-      const module = await import(`../user/components/${componentName}.js`);
-      if (typeof module.init === "function") {
-        module.init(); // 执行组件的初始化逻辑（如事件绑定等）
-      }
-      initMap[componentName] = true; // 标记为已初始化
+    // 每次都动态 import 并执行 init（如果有）
+    const module = await import(`../user/components/${componentName}.js`);
+    if (typeof module.init === "function") {
+      module.init();
     }
   } catch (err) {
     console.error(`❌ 加载组件失败: ${componentName}`, err);

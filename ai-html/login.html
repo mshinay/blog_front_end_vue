@@ -23,6 +23,12 @@
             <button type="submit" id="register">注册</button>
         </div>
     </form>
+    <script>
+    document.getElementById('register').addEventListener('click', function () {
+        e.preventDefault(); // 阻止表单默认提交行为
+      window.location.href = '/ai-html/register.html';
+    });
+  </script>
     </body>
 
 

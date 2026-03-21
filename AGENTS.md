@@ -1,162 +1,153 @@
 # AGENTS.md
 
 ## Purpose
-- This file guides autonomous coding agents working in this repository.
+- This file defines build/test commands and coding conventions for autonomous agents.
 - Scope: `D:\work\project\myproject\blog-front-end\front-end`.
-- Follow existing project patterns before introducing new abstractions.
+- Prefer minimal, targeted changes that preserve current behavior.
 
 ## Project Snapshot
-- This repository now contains two front-end tracks:
-  - Legacy static front-end (HTML/CSS/vanilla JS) under root folders.
-  - New Vue rewrite under `vue-app/` (Vue 3 + Vite + TypeScript).
-- Pages live in `ai-html/`, scripts in `js/`, styles in `css/`, assets in `img/`.
-- Vue rewrite source lives in `vue-app/src/`.
-- Front-end talks to a backend API at `http://localhost:8080`.
-- Auth is token-based via `localStorage` key `jwt`.
-- Current user object is stored in `localStorage` key `user`.
+- The repository has two front-end tracks:
+  - Legacy static app: HTML/CSS/vanilla JS at repository root (`ai-html`, `js`, `css`).
+  - Vue rewrite: `vue-app/` using Vue 3 + Vite + TypeScript.
+- Backend API target: `http://localhost:8080`.
+- Auth storage keys: `localStorage.jwt` and `localStorage.user`.
 
 ## Repository Layout
-- `ai-html/`: page entry points and reusable HTML fragments under `ai-html/components/`.
-- `js/article/`: article list/search/detail/upload/edit flows.
-- `js/comment/`: comment list/create/update flows.
-- `js/user/`: login/register/profile/header/user-page flows.
-- `js/user/components/`: dynamically loaded personal-center modules.
-- `js/util/`: shared helpers (`tool.js`, `include-header.js`).
-- `css/` and `css/components/`: page/component styles.
-- `vue-app/`: parallel Vue implementation (router/store/api/components/views/tests).
+- `ai-html/`: legacy pages and HTML fragments (`ai-html/components/`).
+- `js/article`, `js/comment`, `js/user`, `js/util`: legacy scripts.
+- `css/`, `css/components/`: legacy styles.
+- `vue-app/src/api`: axios client + API modules.
+- `vue-app/src/stores`: Pinia stores (`auth`).
+- `vue-app/src/router`: routes + guards (`requiresAuth`, `requiresAdmin`).
+- `vue-app/src/views`: page views.
+- `vue-app/src/components`: reusable UI.
+- `vue-app/src/utils`: shared helpers (`markdown`, `permissions`).
+- `vue-app/tests`: Vitest tests.
 
 ## Cursor / Copilot Rules
-- No `.cursorrules` file was found.
-- No `.cursor/rules/` directory was found.
-- No `.github/copilot-instructions.md` file was found.
-- If these files are added later, treat them as higher-priority constraints.
+- No `.cursorrules` found.
+- No `.cursor/rules/` found.
+- No `.github/copilot-instructions.md` found.
+- If these files appear later, treat them as higher-priority constraints.
 
-## Runtime and Local Dev Commands
-- Legacy install step: not required (static files served directly).
-- Legacy build/lint/test: not configured.
-- Vue app install step:
+## Build / Lint / Test Commands
+- Legacy app:
+  - Install: N/A.
+  - Build: N/A.
+  - Lint: N/A.
+  - Test: N/A.
+- Vue app setup:
   - `cd vue-app && npm install`
-- Vue app dev/build/lint/test:
+- Vue app run/build/lint:
   - `cd vue-app && npm run dev`
   - `cd vue-app && npm run build`
   - `cd vue-app && npm run lint`
-  - `cd vue-app && npm run test`
-- Vue app single-test commands:
-  - Single test file: `cd vue-app && npm run test:one -- tests/auth.store.spec.ts`
-  - Single test by name: `cd vue-app && npm run test:name -- "auth store"`
-- Recommended local server (Python):
+  - `cd vue-app && npm run lint:fix`
+- Vue app tests:
+  - All tests: `cd vue-app && npm run test`
+  - Watch mode: `cd vue-app && npm run test:watch`
+  - Single test file: `cd vue-app && npm run test:one -- tests/permissions.spec.ts`
+  - Single test by name: `cd vue-app && npm run test:name -- "permissions"`
+
+## Local Run Notes
+- Legacy static serve examples:
   - `python -m http.server 5500`
-- Alternative local server (Node, if available):
   - `npx serve . -l 5500`
-- Open main page:
-  - `http://127.0.0.1:5500/ai-html/main.html`
-- Backend dependency for full functionality:
-  - API should be running on `http://localhost:8080`.
+- Legacy entry page: `http://127.0.0.1:5500/ai-html/main.html`.
+- Vue dev URL is printed by Vite (`npm run dev`).
 
-## Test Commands (Current State)
-- Legacy full test suite command: N/A (no framework).
-- Vue full test suite command: `cd vue-app && npm run test`.
-- Vue single test file command: `cd vue-app && npm run test:one -- <file-path>`.
-- Vue pattern/name command: `cd vue-app && npm run test:name -- "<test name>"`.
+## Current Architecture Rules
+- Keep legacy and Vue tracks isolated.
+- Do not rewrite legacy pages when implementing Vue features unless requested.
+- Vue API calls go through `vue-app/src/api/client.ts`.
+- Keep route/auth logic centralized in router guards + auth store.
 
-## Testing Guidance Until Framework Exists
-- Do smoke tests manually per touched page:
-  - Auth: `ai-html/login.html`, `ai-html/register.html`.
-  - Article flows: `ai-html/main.html`, `ai-html/article.html`, `ai-html/upload.html`, `ai-html/edit-article.html`.
-  - User center: `ai-html/person.html`, `ai-html/user-page.html`.
-  - Search: `ai-html/search.html`.
-- Verify authenticated requests send `authentication` header with JWT.
-- Verify unauthenticated paths either redirect or alert as expected.
-- For infinite-scroll pages, confirm sentinel-triggered pagination works and stops at end.
+## TypeScript and Types
+- Use `<script setup lang="ts">` in Vue SFCs.
+- Avoid `any`; introduce/extend interfaces in `vue-app/src/types`.
+- Type API payloads and responses explicitly in API modules.
+- Keep nullable states explicit (`T | null`) for async-loaded data.
 
-## If You Add a Test Runner
-- Prefer `vitest` for lightweight JS testing in this repo.
-- Suggested scripts (if `package.json` is introduced):
-  - `test`: `vitest run`
-  - `test:watch`: `vitest`
-  - `test:one`: `vitest run <file-path>`
-  - `test:name`: `vitest run -t "<test name>"`
-- Keep this file updated immediately after adding scripts.
+## Imports and Module Conventions
+- Vue imports should prefer alias paths (`@/...`).
+- Keep one concern per module where practical (view, API module, utility).
+- Avoid circular dependencies between stores, API modules, and components.
+- Legacy JS files can keep relative imports and existing script patterns.
 
-## JavaScript Style Guidelines
-- Legacy: use modern JS (`const`/`let`, async/await where reasonable).
-- Vue app: prefer TypeScript-first code (`<script setup lang="ts">`, typed API and store contracts).
-- Keep functions focused and page-scoped unless shared behavior is needed.
-- Prefer early returns for invalid state (missing token, missing IDs, empty inputs).
-- Use strict equality (`===`, `!==`).
-- Avoid deeply nested conditionals; flatten with guard clauses.
-- Do not introduce heavy frameworks without explicit request.
-
-## Imports and Modules
-- Existing code mixes classic scripts and ES modules; preserve per-page behavior.
-- Vue app uses ESM with alias imports from `@/`.
-- For files using imports, keep explicit `.js` extensions in relative imports.
-- Shared helpers belong in `js/util/` and should be exported explicitly.
-- For dynamic component loading, follow `loadComponent()` + `init()` pattern.
-- Avoid circular imports; keep utilities dependency-light.
-
-## Formatting and File Organization
-- Match existing indentation style in edited files (many files use 2 spaces or 4 spaces inconsistently).
-- Vue app formatting is enforced by ESLint + Prettier.
-- Keep line lengths readable; break long template strings when clarity improves.
-- Prefer one logical concern per file.
-- Keep DOM selectors near top-level constants when reused.
-- Keep side effects inside `DOMContentLoaded` handlers for page scripts.
-
-## Naming Conventions
-- File names: kebab-case for multiword files (e.g., `edit-article.js`).
-- Vue component files: PascalCase in `vue-app/src/components` and `vue-app/src/views`.
-- Variables/functions: camelCase.
-- Constants: camelCase for runtime values, UPPER_SNAKE_CASE only for true constants if introduced.
-- CSS classes/IDs: descriptive kebab-case; align selectors with HTML naming.
-- LocalStorage keys: reuse existing keys (`jwt`, `user`) rather than creating variants.
+## Formatting and Naming
+- Vue code style is enforced by ESLint + Prettier.
+- Naming:
+  - Vue components: PascalCase (`ArticleEditor.vue`).
+  - Variables/functions: camelCase.
+  - File names in legacy JS/HTML/CSS: existing kebab-case style.
+- Keep templates readable; avoid deeply nested conditional markup.
 
 ## API and Data Handling
-- Legacy API base URL is hardcoded (`http://localhost:8080`).
-- Vue app API base URL comes from `VITE_API_BASE_URL` in `.env.development`.
-- Authenticated requests should include header `authentication: <token>`.
-- For JSON requests, include `Content-Type: application/json`.
-- Check response status (`response.ok`) for network/protocol errors.
-- Parse JSON once per response and validate expected fields before use.
-- Handle empty list responses explicitly in paginated views.
+- API base URL:
+  - Vue: `VITE_API_BASE_URL` from `.env.development`.
+  - Legacy: hardcoded `http://localhost:8080` in scripts.
+- Auth header must be `authentication: <token>`.
+- Use `try/catch` around async API calls and return actionable messages.
+- Handle empty paging responses (`records.length === 0`) as end-of-list.
+
+## Markdown / Editor Conventions
+- Article content format is Markdown in Vue flow.
+- ByteMD is used for article create/edit (`split` mode).
+- Markdown rendering uses shared utility with sanitize (`marked` + `dompurify`).
+- Do not store editor HTML snapshots as source-of-truth content.
+
+## Permission Model (Important)
+- `role === 0` is admin.
+- Author-only edit:
+  - Articles: only author can edit.
+  - Comments: only comment owner can edit.
+- Delete permissions:
+  - Author/owner can delete own content.
+  - Admin can delete articles/comments but should not get edit UI for others.
+- Reuse `vue-app/src/utils/permissions.ts`; do not duplicate ad-hoc checks.
 
 ## Error Handling and UX
-- Wrap async network code in `try/catch` (or `.catch` for promise chains).
-- Log actionable errors via `console.error` with context.
-- Show user-facing alerts/messages for failure states already exposed in UI.
-- Never swallow errors silently.
-- Avoid breaking entire page render when one component request fails.
+- Never fail silently.
+- Prefer contextual error text in UI (not only `console.error`).
+- Keep loading, empty, and error states explicit in list/detail pages.
+- Guard route params and missing IDs before API calls.
 
-## DOM and Event Patterns
-- Wait for DOM readiness before querying elements that may not exist yet.
-- Cache frequently reused DOM nodes.
-- Prefer event delegation for dynamic list items (already used in management pages).
-- Remove/rebind listeners when components can mount multiple times.
-- Guard null selectors before dereferencing.
+## DOM / Event Patterns (Legacy)
+- Wait for `DOMContentLoaded` before querying page-level nodes.
+- Use event delegation for dynamic list items where possible.
+- Guard nullable selectors before dereferencing.
+- Keep repeated selectors in constants for readability.
 
 ## Security and Content Safety
-- Treat backend-provided HTML (`innerHTML`) as trusted only if server sanitizes it.
-- When rendering plain text, use `textContent` instead of `innerHTML`.
-- Do not log secrets or tokens.
-- Do not commit credentials or environment secrets.
+- Sanitize markdown-generated HTML before `v-html` rendering.
+- Prefer `textContent` for plain text insertion in legacy pages.
+- Do not log tokens, auth headers, or sensitive payloads.
+- Do not commit secrets (`.env*`, credentials, API keys).
 
-## CSS / UI Guidelines
-- Reuse existing layout patterns and class naming when editing current pages.
-- Prefer external CSS for reusable styling; avoid growing large inline `<style>` blocks.
-- Keep mobile behavior usable; test at narrow viewport widths.
-- Preserve current visual language unless user asks for redesign.
+## CSS / UI Guidance
+- Follow existing visual language unless a redesign is explicitly requested.
+- Keep pages responsive; verify at mobile widths.
+- Avoid large inline styles in new Vue code; use scoped style blocks or shared CSS.
+- Reuse existing spacing and typography tokens in Vue styles.
 
-## Change Management for Agents
-- Make minimal, targeted changes.
-- Keep legacy and Vue tracks isolated; do not break legacy pages while migrating Vue code.
-- Do not rename endpoints, storage keys, or DOM IDs/classes without updating all references.
-- Legacy new files should stay in existing domain folders (`article`, `comment`, `user`, `util`).
-- Vue rewrite files should stay inside `vue-app/src` by domain (`api`, `stores`, `views`, `components`).
-- If introducing tooling (lint/tests/build), document commands here in the same change.
+## Dependency and Tooling Rules
+- Keep dependencies minimal; add packages only when required by feature scope.
+- Document any new scripts in `vue-app/package.json` and this file.
+- If introducing new environment variables, add `.env.example` updates.
+- Do not switch package managers; project currently uses npm.
 
-## Pre-Completion Checklist
-- Confirm edited pages load from static server without console-breaking errors.
-- Confirm related API calls still hit the expected endpoint and headers.
-- Confirm imports resolve in browser context (correct relative paths and `.js` extension).
-- Confirm no missing DOM elements for added selectors.
-- Update this `AGENTS.md` if conventions or commands changed.
+## Testing Expectations
+- When changing logic, add or update Vitest coverage in `vue-app/tests`.
+- Good targets for regression tests:
+  - Permission rules.
+  - Route guards.
+  - Comment action visibility.
+  - Markdown rendering/sanitization.
+- Before finishing, run at least: lint + test + build in `vue-app`.
+
+## Agent Change Checklist
+- Confirm only intended files are modified.
+- Confirm no credential/token files are added.
+- Confirm route names and API endpoints match existing conventions.
+- Confirm author-edit/admin-delete behavior remains consistent.
+- Update this file when commands or architectural rules change.

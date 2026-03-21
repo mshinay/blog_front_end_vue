@@ -15,17 +15,18 @@ async function loadArticles() {
   loading = true;
 
   const token = localStorage.getItem("jwt");
-  const authorId = JSON.parse(localStorage.getItem('user')).id;
+  // 管理员可查看所有文章，不限制authorId，接口可调整
   let url = '';
 
   if (mode === 'normal') {
-    url = `http://localhost:8080/article/user?authorId=${authorId}&page=${page}&pageSize=${pageSize}`;
+    url = `http://localhost:8080/article/admin/list?page=${page}&pageSize=${pageSize}`;
   } else if (mode === 'search') {
-    url = `http://localhost:8080/article/user/search?authorId=${authorId}&keyword=${encodeURIComponent(searchKeyword)}&page=${page}&pageSize=${pageSize}`;
+    url = `http://localhost:8080/article/admin/search?keyword=${encodeURIComponent(searchKeyword)}&page=${page}&pageSize=${pageSize}`;
   }
 
   try {
     const response = await fetch(url, {
+  
       headers: {
         "authentication": token
       }
@@ -37,12 +38,15 @@ async function loadArticles() {
     const data = result.data.records;
     if (data.length === 0) {
       allLoaded = true;
-      observer.disconnect(); // 停止监听
+      observer.disconnect();
       return;
     }
 
     data.forEach(article => {
       const li = document.createElement('li');
+      // 根据状态显示按钮文字，1为正常显示，0为已软删除（隐藏）
+      const btnText = article.status === 1 ? '删除' : '恢复';
+
       li.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <a href="../ai-html/article.html?articleId=${article.id}" class="chapter-link" style="flex-grow: 1;">
@@ -51,11 +55,8 @@ async function loadArticles() {
               <p>${article.summary}</p>
             </div>
           </a>
-          <div style="display: flex; flex-direction: column; margin-left: 10px;">
-            <button style="padding: 5px 10px; margin-bottom: 5px;" class="delete-btn" data-id="${article.id}">删除</button>
-            <a href="../ai-html/edit-article.html?articleId=${article.id}">
-              <button style="padding: 5px 10px;">修改</button>
-            </a>
+          <div style="margin-left: 10px;">
+            <button style="padding: 5px 10px;" class="status-btn" data-id="${article.id}" data-status="${article.status}">${btnText}</button>
           </div>
         </div>
       `;
@@ -70,33 +71,41 @@ async function loadArticles() {
   }
 }
 
-// 事件委托：删除按钮点击事件
+// 事件委托：删除或恢复按钮点击事件
 list.addEventListener('click', async (e) => {
-  if (e.target.classList.contains('delete-btn')) {
+  if (e.target.classList.contains('status-btn')) {
     const articleId = e.target.dataset.id;
+    const currentStatus = Number(e.target.dataset.status);
     if (!articleId) return;
 
-    if (!confirm('确定删除这篇文章吗？')) return;
+    // 根据当前状态确认操作
+    const isDelete = currentStatus === 1; // 当前是可见状态，点击即软删除
+    const confirmMsg = isDelete ? '确定删除（软删除）这篇文章吗？' : '确定恢复这篇文章吗？';
+    if (!confirm(confirmMsg)) return;
 
     try {
       const token = localStorage.getItem("jwt");
-      const response = await fetch(`http://localhost:8080/article/${articleId}`, {
-        method: 'DELETE',
+      // 假设后端提供了软删除和恢复接口，或者统一接口用PATCH更新status
+      const newStatus = isDelete ? 0 : 1;
+      const response = await fetch(`http://localhost:8080/article/admin/status/${articleId}`, {
+        method: 'PATCH',
         headers: {
+          "Content-Type": "application/json",
           "authentication": token
-        }
+        },
+        body: JSON.stringify({ status: newStatus })
       });
-      if (!response.ok) throw new Error('删除失败');
 
-      // 删除对应的 li 元素
-      const li = e.target.closest('li');
-      if (li) li.remove();
+      if (!response.ok) throw new Error(isDelete ? '删除失败' : '恢复失败');
 
-      // 可根据实际情况，判断是否需要重新加载或更新分页状态
-      console.log('删除成功，文章ID:', articleId);
+      // 更新按钮状态和文本
+      e.target.dataset.status = newStatus;
+      e.target.textContent = newStatus === 1 ? '删除' : '恢复';
+
+      console.log(`${isDelete ? '删除' : '恢复'}成功，文章ID:`, articleId);
     } catch (err) {
-      console.error('删除文章失败:', err);
-      alert('删除失败，请重试');
+      console.error('操作失败:', err);
+      alert(`${isDelete ? '删除' : '恢复'}失败，请重试`);
     }
   }
 });

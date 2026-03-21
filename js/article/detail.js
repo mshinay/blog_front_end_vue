@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const article = result.data;
 
     document.querySelector("#article-title").textContent = article.title;
-    document.querySelector("#article-meta").innerHTML = `作者：<a href="/user/${article.authorId}">${article.authorName}</a> | 发布时间：${article.createTime}`;
+    document.querySelector("#article-meta").innerHTML = `作者：<a href="/ai-html/user-page.html?userId=${article.authorId}">${article.authorName}</a> | 发布时间：${article.createTime}`;
     document.querySelector("#article-content").innerHTML = article.content;  // 💡 富文本 HTML
   } catch (error) {
     console.error("加载文章失败:", error);

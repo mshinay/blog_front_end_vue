@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>用户主页</title>
+  <link rel="stylesheet" href="../css/user-page.css" />
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+ <div id="header-container"></div>
+
+    <script src="../js/util/include-header.js"></script>
+
+  <div class="profile">
+    <!-- 用户头像 -->
+    <img src="" alt="头像" style="width: 64px; height: 64px; border-radius: 50%;" />
+  </div>
+
+  <div class="name">
+    <!-- 用户名 -->
+  </div>
+
+  <form class="search" id="search-form-user">
+    <input type="text" name="search-user" placeholder="请输入要查询的内容" />
+    <input type="submit" value="搜索" />
+    <button type="button" id="reset-btn">查看全部文章</button>
+  </form>
+
+  <main class="articles">
+    <ul id="article-list" style="list-style-type: none; padding: 0;"></ul>
+    <div id="scroll-sentinel"></div>
+  </main>
+
+  <script src="../js/user/user-page.js"></script>
+</body>
+</html>

@@ -1,7 +1,13 @@
 export interface ApiResponse<T> {
   code: number
-  msg: string
+  message: string
+  msg?: string
   data: T
+}
+
+export interface ListResult<T> {
+  records: T[]
+  total: number
 }
 
 export interface PageResult<T> {
@@ -9,4 +15,16 @@ export interface PageResult<T> {
   total: number
   page: number
   pageSize: number
+}
+
+export interface CategoryListItem {
+  id: number
+  name: string
+  slug: string
+}
+
+export interface TagListItem {
+  id: number
+  name: string
+  slug: string
 }

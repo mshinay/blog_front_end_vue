@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function (){
         const token = localStorage.getItem("jwt");
         if (!token) {
         alert("请先登录");
-        window.location.href = "http://127.0.0.1:5500/front-end/html/login.html";
+        window.location.href = "http://127.0.0.1:5500/ai-html/login.html";
         return;
         }
 

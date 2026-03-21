@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function (){
         const token = localStorage.getItem("jwt");
         if (!token) {
         alert("请先登录");
-        window.location.href = "http://127.0.0.1:5500/front-end/html/login.html";
+        window.location.href = "http://127.0.0.1:5500/ai-html/login.html";
         return;
         }
  
@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", function (){
         .then(data => {
             if (data.code === 1) {
                 alert("上传成功");
-                // location.href = "/dashboard.html"; // 跳转页面
+             location.href = "/ai-html/main.html"; 
             } else {
                 alert("上传失败: " + data.msg);
             }

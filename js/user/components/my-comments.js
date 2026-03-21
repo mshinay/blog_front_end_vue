@@ -1,3 +1,4 @@
+export function init(){
 let mode = 'normal';             // 'normal' or 'search'
 let searchKeyword = '';
 let page = 1;
@@ -102,3 +103,4 @@ document.querySelector("#reset-btn").addEventListener("click", function () {
 // 初始化加载
 loadComment();
 observer.observe(sentinel);
+}

@@ -41,7 +41,7 @@ async function loadComment() {
 
   const render = () => {
     li.innerHTML = `
-      <a href="/user/${comment.userId}">@${comment.userName}</a>
+      <a href="/ai-html/user-page.html?userId=${comment.userId}">@${comment.userName}</a>
       <div class="timestamp">${comment.createTime}</div>
       <div class="comment-content">${comment.content}</div>
       ${isOwner ? '<button class="edit-btn">修改</button>' : ''}

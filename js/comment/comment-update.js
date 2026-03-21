@@ -1,6 +1,6 @@
 export async function updateComment(commentId, newContent, token) {
   const response = await fetch(`http://localhost:8080/comment/update`, {
-    method: 'POST',
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
       'authentication': token

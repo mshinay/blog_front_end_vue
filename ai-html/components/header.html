@@ -1,5 +1,11 @@
 <!-- public/components/header.html -->
 <header class="header">
+
+ <!-- 新增主页按钮区域 -->
+  <div class="home-button">
+    <button onclick="location.href='../ai-html/main.html'">主页</button>
+</div>
+
   <form class="search" id="search-form">
     <input type="text" name="search" placeholder="请输入要查询的内容">
     <input type="submit" value="搜索">
@@ -10,8 +16,10 @@
   </div>
 
   <div class="user" id="user-box">
-    <img src="../img/user-64.png" alt="用户头像" id="user-avatar" style="display: none;">
-    <span id="username" style="display: none;"></span>
+      <a href="/ai-html/person.html" id="user-link" >
+    <img src="../img/user-64.png" alt="用户头像" id="user-avatar">
+    <span id="username"></span>
+  </a>
     <button id="login-btn">登录</button>
     <button id="register-btn">注册</button>
     <button id="logout-btn" style="display: none;">退出</button>

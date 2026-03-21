@@ -43,7 +43,7 @@ async function loadComment() {
 
       const renderViewMode = () => {
         li.innerHTML = `
-          <a href="/user/${comment.userId}">@${comment.userName}</a>
+          <a href="/ai-html/user-page.html?userId=${comment.userId}">@${comment.userName}</a>
           <div class="timestamp">${comment.createTime}</div>
           <div class="comment-content">${comment.content}</div>
           ${
@@ -67,7 +67,7 @@ async function loadComment() {
             const confirmed = confirm("确定要删除该评论吗？");
             if (!confirmed) return;
             try {
-              const res = await fetch(`http://localhost:8080/comment/delete/${comment.id}`, {
+              const res = await fetch(`http://localhost:8080/comment/${comment.id}`, {
                 method: "DELETE",
                 headers: {
                   "authentication": token

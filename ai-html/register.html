@@ -1,25 +1,77 @@
 <!DOCTYPE html>
-<html>
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-   
-   <!--  <script src="../js/user/register.js"></script> -->
-    </head>
-    <body>
-<div id="register-modal" class="modal" >
-  <div class="modal-content">
-    <span class="close-modal">×</span>
-    <h3>注册</h3>
-    <form id="register-form">
-      <input type="text" id="register-username" placeholder="用户名" required />
-     <input type="email"  id="email" name="email" placeholder="邮箱" required>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>注册</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .register-div {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 2rem;
+      background-color: #f9f9f9;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .register-div div {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .register-div label {
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .register-div input {
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    .register-div button {
+      align-self: flex-start;
+      padding: 0.5rem 1rem;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .register-div button:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div class="register-div">
+    <div>
+      <label for="register-username">用户名</label>
+      <input type="text" id="register-username" placeholder="请输入用户名" required />
+    </div>
+    <div>
+      <label for="register-email">邮箱</label>
+      <input type="email" id="register-email" placeholder="请输入邮箱" required />
+    </div>
+    <div>
+      <label for="register-password">密码</label>
       <input type="password" id="register-password" placeholder="密码" required />
-       <input type="password" id="confirm-password" name="confirm-password" placeholder="确认密码" required>
-      <button type="submit">注册</button>
-    </form>
+    </div>
+    <div>
+      <label for="confirm-password">确认密码</label>
+      <input type="password" id="confirm-password" placeholder="确认密码" required />
+    </div>
+    <button id="register-submit">注册</button>
   </div>
-</div>
-    </body>
+
+  <script type="module" src="../js/user/register.js"></script>
+</body>
 </html>

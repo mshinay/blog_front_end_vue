@@ -1,5 +1,5 @@
 import { loadComponent } from "../util/tool.js";
- 
+
     //默认显示账号设置
     loadComponent("account-setting");
 document.querySelectorAll('.side-bar-div div').forEach(item => {
