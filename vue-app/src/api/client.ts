@@ -3,6 +3,12 @@ import type { AxiosError, AxiosResponse } from 'axios'
 
 import type { ApiResponse } from '@/types/api'
 
+interface ApiErrorPayload {
+  code?: number
+  message?: string
+  msg?: string
+}
+
 export class AppError extends Error {
   status?: number
   code?: number
@@ -32,10 +38,10 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (response) => {
-    const payload = response.data as ApiResponse<unknown> | undefined
+    const payload = response.data as ApiErrorPayload | undefined
 
-    if (payload && typeof payload.code === 'number' && payload.code !== 1) {
-      throw new AppError(payload.msg || 'Request failed', {
+    if (payload && typeof payload.code === 'number' && payload.code !== 0) {
+      throw new AppError(payload.message || payload.msg || 'Request failed', {
         code: payload.code,
         status: response.status,
       })
@@ -44,7 +50,7 @@ apiClient.interceptors.response.use(
     return response
   },
   (error) => {
-    const axiosError = error as AxiosError<ApiResponse<unknown>>
+    const axiosError = error as AxiosError<ApiErrorPayload>
 
     if (axiosError.response?.status === 401) {
       localStorage.removeItem('jwt')
@@ -57,6 +63,7 @@ apiClient.interceptors.response.use(
 
     const status = axiosError.response?.status
     const message =
+      axiosError.response?.data?.message ||
       axiosError.response?.data?.msg ||
       axiosError.message ||
       'Network error, please try again later.'

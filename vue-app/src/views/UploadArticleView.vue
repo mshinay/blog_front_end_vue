@@ -35,9 +35,9 @@ async function handlePublish(payload: { title: string; content: string }): Promi
   errorMessage.value = ''
 
   try {
-    const created = await createArticle(payload)
-    if (created.id) {
-      await router.push(`/article/${created.id}`)
+    const articleId = await createArticle(payload)
+    if (typeof articleId === 'number' && articleId > 0) {
+      await router.push(`/article/${articleId}`)
       return
     }
 

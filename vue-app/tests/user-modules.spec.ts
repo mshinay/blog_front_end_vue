@@ -36,7 +36,7 @@ describe('user/article/comment modules', () => {
 
     const user = await getPublicUser(1)
 
-    expect(getMock).toHaveBeenCalledWith('/user/public/1')
+    expect(getMock).toHaveBeenCalledWith('/api/users/1')
     expect(user.username).toBe('demo')
   })
 

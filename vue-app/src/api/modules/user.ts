@@ -13,6 +13,9 @@ export interface RegisterPayload {
   username: string
   email: string
   password: string
+  nickname?: string
+  avatarUrl?: string
+  bio?: string
 }
 
 export interface UpdateUserPayload {
@@ -24,15 +27,22 @@ export interface UpdateUserPayload {
 }
 
 export function login(payload: LoginPayload): Promise<User> {
-  return apiClient.post<ApiResponse<User>>('/user/login', payload).then(unwrapData)
+  return apiClient.post<ApiResponse<User>>('/api/users/login', payload).then(unwrapData)
 }
 
 export function register(payload: RegisterPayload): Promise<User> {
-  return apiClient.post<ApiResponse<User>>('/user/register', payload).then(unwrapData)
+  return apiClient
+    .post<ApiResponse<User>>('/api/users/register', {
+      ...payload,
+      nickname: payload.nickname ?? payload.username,
+      avatarUrl: payload.avatarUrl ?? '',
+      bio: payload.bio ?? '',
+    })
+    .then(unwrapData)
 }
 
 export function getPublicUser(userId: string | number): Promise<User> {
-  return apiClient.get<ApiResponse<User>>(`/user/public/${userId}`).then(unwrapData)
+  return apiClient.get<ApiResponse<User>>(`/api/users/${userId}`).then(unwrapData)
 }
 
 export function updateUserProfile(payload: UpdateUserPayload): Promise<User> {
