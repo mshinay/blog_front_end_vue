@@ -47,6 +47,11 @@ export interface ArticleDetail {
   comments: CommentNode[]
 }
 
+export interface ArticlePermissionTarget {
+  id: number
+  authorId: number
+}
+
 export interface AdminArticleItem {
   id: number
   title: string
@@ -81,5 +86,19 @@ export interface ArticlePayload {
 export interface Article extends Partial<ArticleListItem>, Partial<ArticleDetail>, Partial<AdminArticleItem> {
   id: number
   title: string
+  authorId?: number
+  authorName?: string
   createTime?: string
+}
+
+export interface ArticleCardModel {
+  id: number
+  title: string
+  slug?: string
+  summary?: string
+  coverUrl?: string
+  authorName?: string
+  publishTime?: string
+  createTime?: string
+  tagList?: TagListItem[]
 }

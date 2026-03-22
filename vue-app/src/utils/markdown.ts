@@ -6,12 +6,12 @@ marked.setOptions({
   gfm: true,
 })
 
-export function renderMarkdown(content: string): string {
+export function renderMarkdown(content?: string | null): string {
   const html = marked.parse(content ?? '', { async: false })
   return DOMPurify.sanitize(html)
 }
 
-export function markdownToPlainText(content: string): string {
+export function markdownToPlainText(content?: string | null): string {
   const html = renderMarkdown(content)
   const node = document.createElement('div')
   node.innerHTML = html

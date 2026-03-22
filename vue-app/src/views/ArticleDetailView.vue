@@ -5,13 +5,23 @@
 
     <article v-else-if="article" class="article-card">
       <header class="article-header">
-        <div>
+        <div class="header-main">
           <h1>{{ article.title }}</h1>
           <p class="meta">
             by
-            <RouterLink :to="`/user/${article.authorId}`">{{ article.authorName ?? 'Unknown author' }}</RouterLink>
-            <span>{{ article.createTime ?? '' }}</span>
+            <RouterLink :to="authorProfileLink">{{ authorDisplayName }}</RouterLink>
+            <span>{{ article.publishTime ?? '' }}</span>
+            <span v-if="article.updatedTime">Updated {{ article.updatedTime }}</span>
           </p>
+          <p v-if="article.summary" class="summary">{{ article.summary }}</p>
+          <div class="taxonomy">
+            <span v-if="article.category" class="taxonomy-item">
+              Category: {{ article.category.name }}
+            </span>
+            <span v-for="tag in article.tags ?? []" :key="tag.id" class="taxonomy-item">
+              #{{ tag.name }}
+            </span>
+          </div>
         </div>
 
         <div class="action-group">
@@ -34,11 +44,33 @@
         </div>
       </header>
 
+      <dl class="stats-list">
+        <div class="stats-item">
+          <dt>Views</dt>
+          <dd>{{ article.stats?.viewCount ?? 0 }}</dd>
+        </div>
+        <div class="stats-item">
+          <dt>Likes</dt>
+          <dd>{{ article.stats?.likeCount ?? 0 }}</dd>
+        </div>
+        <div class="stats-item">
+          <dt>Comments</dt>
+          <dd>{{ article.stats?.commentCount ?? 0 }}</dd>
+        </div>
+        <div class="stats-item">
+          <dt>Favorites</dt>
+          <dd>{{ article.stats?.favoriteCount ?? 0 }}</dd>
+        </div>
+      </dl>
+
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="content" v-html="articleHtml" />
     </article>
 
-    <CommentList v-if="article" :article-id="article.id" />
+    <p v-if="article && !isCommentEnabled" class="comment-disabled">
+      Comments are disabled for this article.
+    </p>
+    <CommentList v-else-if="article" :article-id="article.id" />
   </section>
 </template>
 
@@ -51,7 +83,7 @@ import { deleteArticle, getArticleDetail } from '@/api/modules/article'
 import CommentList from '@/components/comment/CommentList.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useAuthStore } from '@/stores/auth'
-import type { Article } from '@/types/article'
+import type { Article, ArticlePermissionTarget } from '@/types/article'
 import { canDeleteArticle, canEditArticle } from '@/utils/permissions'
 import { renderMarkdown } from '@/utils/markdown'
 
@@ -64,12 +96,33 @@ const isLoading = ref(false)
 const isDeleting = ref(false)
 const errorMessage = ref('')
 
-const articleHtml = computed(() => renderMarkdown(article.value?.content ?? ''))
-const canEditArticlePermission = computed(() => canEditArticle(authStore.currentUser, article.value))
-const canDeleteArticlePermission = computed(() => canDeleteArticle(authStore.currentUser, article.value))
+const articlePermissionTarget = computed<ArticlePermissionTarget | null>(() => {
+  if (!article.value?.id || !article.value.author?.id) {
+    return null
+  }
+
+  return {
+    id: article.value.id,
+    authorId: article.value.author.id,
+  }
+})
+const articleHtml = computed(() => renderMarkdown(article.value?.content))
+const authorDisplayName = computed(
+  () => article.value?.author?.nickname || article.value?.author?.username || 'Unknown author',
+)
+const authorProfileLink = computed(() => `/user/${article.value?.author?.id ?? ''}`)
+const isCommentEnabled = computed(() => article.value?.allowComment === 1)
+const canEditArticlePermission = computed(() =>
+  canEditArticle(authStore.currentUser, articlePermissionTarget.value as Article | null),
+)
+const canDeleteArticlePermission = computed(() =>
+  canDeleteArticle(authStore.currentUser, articlePermissionTarget.value as Article | null),
+)
 
 async function loadArticleDetail(): Promise<void> {
   const articleId = route.params.articleId
+  article.value = null
+
   if (!articleId) {
     errorMessage.value = 'Missing article id.'
     return
@@ -146,6 +199,10 @@ watch(
   gap: 1rem;
 }
 
+.header-main {
+  min-width: 0;
+}
+
 .action-group {
   display: flex;
   gap: 0.55rem;
@@ -171,6 +228,27 @@ h1 {
   font-weight: 700;
 }
 
+.summary {
+  margin: 0.75rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.taxonomy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.taxonomy-item {
+  border-radius: 999px;
+  background: #edf3fb;
+  color: #1f4f92;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.85rem;
+}
+
 .edit-link {
   text-decoration: none;
   border-radius: 999px;
@@ -193,9 +271,43 @@ h1 {
   cursor: not-allowed;
 }
 
+.stats-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+}
+
+.stats-item {
+  border-radius: 14px;
+  border: 1px solid var(--color-border);
+  background: #f8fafc;
+  padding: 0.75rem;
+}
+
+.stats-item dt {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.stats-item dd {
+  margin: 0.35rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
 .content {
   margin-top: 1rem;
   line-height: 1.7;
+}
+
+.comment-disabled {
+  margin: 0;
+  border-radius: 12px;
+  border: 1px solid #d7e3f3;
+  background: #f7fbff;
+  color: #1f4f92;
+  padding: 0.75rem 1rem;
 }
 
 .error-text {
@@ -210,6 +322,10 @@ h1 {
 @media (max-width: 768px) {
   .article-header {
     flex-direction: column;
+  }
+
+  .stats-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

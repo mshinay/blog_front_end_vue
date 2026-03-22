@@ -35,19 +35,19 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { AppError } from '@/api/client'
-import { searchArticles } from '@/api/modules/article'
+import { getArticleList } from '@/api/modules/article'
 import ArticleCard from '@/components/article/ArticleCard.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
-import type { Article } from '@/types/article'
+import type { ArticleListItem } from '@/types/article'
 
 const route = useRoute()
 const router = useRouter()
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
-const results = ref<Article[]>([])
+const results = ref<ArticleListItem[]>([])
 const page = ref(1)
 const pageSize = 10
 const isLoading = ref(false)
@@ -73,7 +73,9 @@ async function loadMore(): Promise<void> {
   errorMessage.value = ''
 
   try {
-    const pageResult = await searchArticles(activeKeyword.value, page.value, pageSize)
+    const pageResult = await getArticleList(page.value, pageSize, {
+      keyword: activeKeyword.value,
+    })
     const records = pageResult.records ?? []
 
     if (records.length === 0) {

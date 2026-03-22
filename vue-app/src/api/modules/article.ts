@@ -1,20 +1,12 @@
 import apiClient, { unwrapData } from '@/api/client'
 
 import type { ApiResponse, PageResult } from '@/types/api'
-import type { Article } from '@/types/article'
+import type { Article, ArticleListItem, ArticlePayload } from '@/types/article'
 
-export interface ArticleMutationPayload {
+export interface ArticleMutationPayload extends Partial<ArticlePayload> {
   id?: number
   title: string
-  slug?: string
-  summary?: string
-  coverUrl?: string
   content: string
-  contentType?: string
-  categoryId?: number
-  tagIds?: number[]
-  allowComment?: number
-  status?: number
 }
 
 export interface ArticleListQuery {
@@ -75,28 +67,24 @@ function resolveAdminArticleListQuery(
   return pageOrQuery
 }
 
-export function getArticleList(page: number, pageSize: number, filters?: ArticleListFilters): Promise<PageResult<Article>>
-export function getArticleList(query: ArticleListQuery): Promise<PageResult<Article>>
+export function getArticleList(
+  page: number,
+  pageSize: number,
+  filters?: ArticleListFilters,
+): Promise<PageResult<ArticleListItem>>
+export function getArticleList(query: ArticleListQuery): Promise<PageResult<ArticleListItem>>
 export function getArticleList(
   pageOrQuery: number | ArticleListQuery,
   pageSize?: number,
   filters?: ArticleListFilters,
-): Promise<PageResult<Article>> {
+): Promise<PageResult<ArticleListItem>> {
   const params = resolveArticleListQuery(pageOrQuery, pageSize, filters)
 
   return apiClient
-    .get<ApiResponse<PageResult<Article>>>('/api/articles', {
+    .get<ApiResponse<PageResult<ArticleListItem>>>('/api/articles', {
       params,
     })
     .then(unwrapData)
-}
-
-export function searchArticles(
-  keyword: string,
-  page: number,
-  pageSize: number,
-): Promise<PageResult<Article>> {
-  return getArticleList(page, pageSize, { keyword })
 }
 
 export function getArticleDetail(articleId: string | number): Promise<Article> {
