@@ -1,15 +1,20 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 
-const { routeState, replaceMock } = vi.hoisted(() => {
+import { useAuthStore } from '@/stores/auth'
+
+const { routeState, replaceMock, getPublicUserMock } = vi.hoisted(() => {
   return {
     routeState: {
       query: {} as Record<string, unknown>,
+      params: {} as Record<string, unknown>,
     },
     replaceMock: vi.fn(async (location: { query?: Record<string, unknown> }) => {
       routeState.query = location.query ?? {}
       return true
     }),
+    getPublicUserMock: vi.fn(),
   }
 })
 
@@ -22,12 +27,40 @@ vi.mock('vue-router', () => {
   }
 })
 
+vi.mock('@/api/modules/user', () => {
+  return {
+    getPublicUser: getPublicUserMock,
+  }
+})
+
 import PersonCenterView from '@/views/PersonCenterView.vue'
 
 describe('PersonCenterView', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
+    const authStore = useAuthStore()
+    authStore.setAuth('token-1', {
+      id: 1,
+      username: 'demo',
+      nickname: 'Demo User',
+      avatarUrl: '/avatar.png',
+      role: 1,
+      status: 1,
+      jwtToken: 'token-1',
+    })
     routeState.query = {}
+    routeState.params = {}
     replaceMock.mockClear()
+    getPublicUserMock.mockReset()
+    getPublicUserMock.mockResolvedValue({
+      id: 1,
+      username: 'demo',
+      nickname: 'Demo User',
+      avatarUrl: '/avatar.png',
+      role: 1,
+      status: 1,
+      bio: 'bio',
+    })
   })
 
   it('renders articles tab panel from query', async () => {
@@ -45,6 +78,7 @@ describe('PersonCenterView', () => {
 
     await flushPromises()
 
+    expect(getPublicUserMock).toHaveBeenCalledWith(1)
     expect(wrapper.find('[data-testid="articles-panel"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="account-panel"]').exists()).toBe(false)
   })

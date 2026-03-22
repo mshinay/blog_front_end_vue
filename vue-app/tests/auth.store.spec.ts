@@ -113,7 +113,8 @@ describe('auth store', () => {
     expect(store.currentUser?.nickname).toBe('Login User')
     expect(store.currentUser?.avatarUrl).toBe('/login.png')
     expect(store.currentUser?.status).toBe(1)
-    expect(loginMock).toHaveBeenCalledOnce()
+    expect(loginMock).toHaveBeenCalledWith({ username: 'demo', password: '123456' })
+    expect(store.isLoading).toBe(false)
   })
 
   it('registerAndLogin stores auth fields from api response', async () => {
@@ -140,7 +141,24 @@ describe('auth store', () => {
     expect(store.currentUser?.nickname).toBe('Register User')
     expect(store.currentUser?.avatarUrl).toBe('/register.png')
     expect(store.currentUser?.status).toBe(1)
-    expect(registerMock).toHaveBeenCalledOnce()
+    expect(registerMock).toHaveBeenCalledWith({
+      username: 'demo-register',
+      email: 'demo@example.com',
+      password: '123456',
+    })
+    expect(store.isLoading).toBe(false)
+  })
+
+  it('resets loading state when loginWithPassword fails', async () => {
+    loginMock.mockRejectedValueOnce(new Error('network'))
+    const store = useAuthStore()
+
+    await expect(store.loginWithPassword({ username: 'demo', password: '123456' })).rejects.toThrow(
+      'network',
+    )
+
+    expect(store.isLoading).toBe(false)
+    expect(store.isAuthenticated).toBe(false)
   })
 
   it('updateCurrentUser keeps existing token and stored auth fields when jwtToken absent', () => {

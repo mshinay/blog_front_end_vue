@@ -77,4 +77,32 @@ describe('CommentItem', () => {
     expect(wrapper.find('button.ghost').exists()).toBe(false)
     expect(wrapper.find('button.danger').exists()).toBe(true)
   })
+
+  it('renders reply label and createdTime when present', () => {
+    const wrapper = mount(CommentItem, {
+      props: {
+        comment: {
+          id: 9,
+          articleId: 1,
+          userId: 2,
+          userName: 'demo',
+          content: 'reply body',
+          replyUserName: 'author',
+          replyToCommentId: 5,
+          createdTime: '2026-03-20T10:00:00',
+        },
+      },
+      global: {
+        stubs: {
+          RouterLink: {
+            template: '<a><slot /></a>',
+          },
+        },
+      },
+    })
+
+    expect(wrapper.text()).toContain('Reply @author')
+    expect(wrapper.text()).toContain('#5')
+    expect(wrapper.text()).toContain('2026-03-20T10:00:00')
+  })
 })

@@ -51,6 +51,21 @@ describe('router guards', () => {
     })
   })
 
+  it('redirects unauthenticated users to login before admin denial', () => {
+    const result = resolveGuardRedirect(
+      createRoute({ requiresAuth: true, requiresAdmin: true }, 'admin-comments', '/admin/comments'),
+      {
+        isAuthenticated: false,
+        isAdmin: false,
+      },
+    )
+
+    expect(result).toEqual({
+      name: 'login',
+      query: { redirect: '/admin/comments' },
+    })
+  })
+
   it('allows admin users on admin routes', () => {
     const result = resolveGuardRedirect(
       createRoute({ requiresAuth: true, requiresAdmin: true }, 'admin-articles', '/admin/articles'),
