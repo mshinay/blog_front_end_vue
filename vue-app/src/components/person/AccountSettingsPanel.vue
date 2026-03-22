@@ -5,6 +5,15 @@
       <p>Keep your profile details current.</p>
     </header>
 
+    <section v-if="profile" class="profile-summary">
+      <img class="summary-avatar" :src="profile.avatarUrl || '/vite.svg'" alt="Profile avatar" />
+      <div>
+        <p class="summary-name">{{ profile.nickname || profile.username }}</p>
+        <p class="summary-username">@{{ profile.username }}</p>
+        <p class="summary-bio">{{ profile.bio || 'No bio yet.' }}</p>
+      </div>
+    </section>
+
     <p v-if="successMessage" class="success-text">{{ successMessage }}</p>
     <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
 
@@ -65,8 +74,13 @@ import { computed, ref, watch } from 'vue'
 import { AppError } from '@/api/client'
 import { updateUserProfile, uploadAvatar } from '@/api/modules/user'
 import { useAuthStore } from '@/stores/auth'
+import type { UserProfile } from '@/types/user'
 
 type ProfileField = 'username' | 'email' | 'password'
+
+defineProps<{
+  profile?: UserProfile | null
+}>()
 
 const authStore = useAuthStore()
 
@@ -220,6 +234,39 @@ header p {
   display: flex;
   align-items: center;
   gap: 0.9rem;
+}
+
+.profile-summary {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fcfdff;
+  padding: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.summary-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+}
+
+.summary-name,
+.summary-username,
+.summary-bio {
+  margin: 0;
+}
+
+.summary-name {
+  font-weight: 700;
+}
+
+.summary-username,
+.summary-bio {
+  color: var(--color-muted);
 }
 
 .avatar {

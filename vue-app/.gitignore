@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 /planner/
+/builder/
+pre_read.md
+前后端对齐接口文档.md
+

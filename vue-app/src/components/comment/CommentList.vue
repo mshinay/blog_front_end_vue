@@ -2,7 +2,7 @@
   <section class="comment-section">
     <header>
       <h2>Comments</h2>
-      <p>{{ comments.length }} loaded</p>
+      <p>{{ loadedCount }} loaded</p>
     </header>
 
     <CommentEditor
@@ -10,6 +10,7 @@
       submit-text="Post Comment"
       loading-text="Posting..."
       :loading="isCreating"
+      :reset-key="editorResetKey"
       placeholder="Write your comment in Markdown..."
       @submit="createNewComment"
     />
@@ -18,13 +19,18 @@
 
     <ul v-if="comments.length > 0" class="comment-list">
       <CommentItem
-        v-for="comment in comments"
-        :key="comment.id"
-        :comment="comment"
-        :can-edit="canCurrentUserEdit(comment)"
-        :can-delete="canCurrentUserDelete(comment)"
-        :is-saving="updatingId === comment.id"
-        :is-deleting="deletingId === comment.id"
+        v-for="commentNode in comments"
+        :key="commentNode.comment.id"
+        :comment="commentNode.comment"
+        :children="commentNode.children"
+        :can-edit="canCurrentUserEdit(commentNode.comment)"
+        :can-delete="canCurrentUserDelete(commentNode.comment)"
+        :is-saving="updatingId === commentNode.comment.id"
+        :is-deleting="deletingId === commentNode.comment.id"
+        :resolve-can-edit="canCurrentUserEdit"
+        :resolve-can-delete="canCurrentUserDelete"
+        :active-saving-id="updatingId"
+        :active-deleting-id="deletingId"
         @update="updateExistingComment"
         @delete="deleteExistingComment"
       />
@@ -58,7 +64,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 import { useAuthStore } from '@/stores/auth'
-import type { CommentItem as CommentModel } from '@/types/comment'
+import type { CommentItem as CommentModel, CommentNode } from '@/types/comment'
 import { canDeleteComment, canEditComment } from '@/utils/permissions'
 
 const props = defineProps<{
@@ -67,7 +73,7 @@ const props = defineProps<{
 
 const authStore = useAuthStore()
 
-const comments = ref<CommentModel[]>([])
+const comments = ref<CommentNode[]>([])
 const page = ref(1)
 const pageSize = 10
 const isLoading = ref(false)
@@ -77,8 +83,12 @@ const sentinelRef = ref<HTMLElement | null>(null)
 const isCreating = ref(false)
 const updatingId = ref<number | null>(null)
 const deletingId = ref<number | null>(null)
+const editorResetKey = ref(0)
 
 const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
+const loadedCount = computed(() =>
+  comments.value.reduce((count, node) => count + 1 + node.children.length, 0),
+)
 
 function resetState(): void {
   comments.value = []
@@ -112,7 +122,14 @@ async function loadMoreComments(): Promise<void> {
       return
     }
 
-    comments.value.push(...records)
+    comments.value.push(
+      ...records
+        .filter((record) => Boolean(record.comment))
+        .map((record) => ({
+          comment: record.comment,
+          children: record.children ?? [],
+        })),
+    )
     page.value += 1
   } catch (error) {
     if (error instanceof AppError) {
@@ -135,11 +152,17 @@ async function createNewComment(content: string): Promise<void> {
   errorMessage.value = ''
 
   try {
-    const created = await createComment({
+    await createComment({
       articleId: props.articleId,
+      parentId: 0,
+      rootId: 0,
+      replyUserId: 0,
+      replyToCommentId: 0,
       content,
     })
-    comments.value.unshift(created)
+    resetState()
+    await loadMoreComments()
+    editorResetKey.value += 1
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message
@@ -157,13 +180,21 @@ async function updateExistingComment(payload: { id: number; content: string }): 
 
   try {
     const updated = await updateComment(payload)
-    const targetIndex = comments.value.findIndex((item) => item.id === payload.id)
-    if (targetIndex >= 0) {
-      comments.value[targetIndex] = {
-        ...comments.value[targetIndex],
-        ...updated,
+    comments.value = comments.value.map((node) => {
+      if (node.comment.id === payload.id) {
+        return {
+          ...node,
+          comment: { ...node.comment, ...updated },
+        }
       }
-    }
+
+      return {
+        ...node,
+        children: node.children.map((child) =>
+          child.id === payload.id ? { ...child, ...updated } : child,
+        ),
+      }
+    })
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message
@@ -181,7 +212,12 @@ async function deleteExistingComment(commentId: number): Promise<void> {
 
   try {
     await deleteComment(commentId)
-    comments.value = comments.value.filter((item) => item.id !== commentId)
+    comments.value = comments.value
+      .filter((node) => node.comment.id !== commentId)
+      .map((node) => ({
+        ...node,
+        children: node.children.filter((child) => child.id !== commentId),
+      }))
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message

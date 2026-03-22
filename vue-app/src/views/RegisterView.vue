@@ -15,6 +15,21 @@
       </label>
 
       <label>
+        Nickname
+        <input v-model.trim="form.nickname" type="text" autocomplete="nickname" />
+      </label>
+
+      <label>
+        Avatar URL
+        <input v-model.trim="form.avatarUrl" type="url" autocomplete="url" />
+      </label>
+
+      <label>
+        Bio
+        <textarea v-model.trim="form.bio" rows="4" />
+      </label>
+
+      <label>
         Password
         <input v-model="form.password" type="password" autocomplete="new-password" required />
       </label>
@@ -51,6 +66,9 @@ const authStore = useAuthStore()
 const form = reactive({
   username: '',
   email: '',
+  nickname: '',
+  avatarUrl: '',
+  bio: '',
   password: '',
   confirmPassword: '',
 })
@@ -71,9 +89,12 @@ async function handleSubmit(): Promise<void> {
 
   try {
     await authStore.registerAndLogin({
-      username: form.username,
-      email: form.email,
+      username: form.username.trim(),
+      email: form.email.trim(),
       password: form.password,
+      nickname: form.nickname.trim() || undefined,
+      avatarUrl: form.avatarUrl.trim() || undefined,
+      bio: form.bio.trim() || undefined,
     })
 
     await router.push('/main')
@@ -131,6 +152,14 @@ input {
   padding: 0.65rem 0.75rem;
   border-radius: 10px;
   border: 1px solid var(--color-border-strong);
+}
+
+textarea {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-border-strong);
+  font: inherit;
+  resize: vertical;
 }
 
 .submit-btn {

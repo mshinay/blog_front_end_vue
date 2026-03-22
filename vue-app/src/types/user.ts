@@ -1,4 +1,4 @@
-export interface UserSummary {
+export interface AuthUser {
   id: number
   username: string
   nickname: string
@@ -8,6 +8,8 @@ export interface UserSummary {
   jwtToken: string
 }
 
+export type StoredUser = Omit<AuthUser, 'jwtToken'>
+
 export interface UserProfile {
   id: number
   username: string
@@ -16,7 +18,7 @@ export interface UserProfile {
   bio: string
 }
 
-export interface User extends Partial<UserSummary>, Partial<UserProfile> {
+export interface User extends Partial<AuthUser>, Partial<UserProfile> {
   id: number
   username: string
   nickname?: string

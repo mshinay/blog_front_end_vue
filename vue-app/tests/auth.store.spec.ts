@@ -31,11 +31,25 @@ describe('auth store', () => {
     store.setAuth('token-1', {
       id: 1,
       username: 'demo',
-      email: 'demo@example.com',
+      nickname: 'Demo User',
+      avatarUrl: '/avatar.png',
+      role: 1,
+      status: 1,
+      jwtToken: 'token-1',
     })
 
     expect(store.isAuthenticated).toBe(true)
     expect(localStorage.getItem('jwt')).toBe('token-1')
+    expect(localStorage.getItem('user')).toBe(
+      JSON.stringify({
+        id: 1,
+        username: 'demo',
+        nickname: 'Demo User',
+        avatarUrl: '/avatar.png',
+        role: 1,
+        status: 1,
+      }),
+    )
   })
 
   it('clears auth state', () => {
@@ -44,6 +58,11 @@ describe('auth store', () => {
     store.setAuth('token-2', {
       id: 2,
       username: 'demo2',
+      nickname: 'Demo Two',
+      avatarUrl: '/two.png',
+      role: 1,
+      status: 1,
+      jwtToken: 'token-2',
     })
 
     store.clearAuth()
@@ -55,20 +74,34 @@ describe('auth store', () => {
 
   it('hydrates from localStorage with admin role', () => {
     localStorage.setItem('jwt', 'stored-token')
-    localStorage.setItem('user', JSON.stringify({ id: 3, username: 'admin', role: 0 }))
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        id: 3,
+        username: 'admin',
+        nickname: 'Admin',
+        avatarUrl: '/admin.png',
+        role: 0,
+        status: 1,
+      }),
+    )
 
     const store = useAuthStore()
 
     expect(store.isAuthenticated).toBe(true)
     expect(store.isAdmin).toBe(true)
     expect(store.currentUser?.username).toBe('admin')
+    expect(store.currentUser?.nickname).toBe('Admin')
   })
 
-  it('loginWithPassword stores jwtToken from api', async () => {
+  it('loginWithPassword stores auth fields from api response', async () => {
     loginMock.mockResolvedValueOnce({
       id: 10,
       username: 'demo-login',
+      nickname: 'Login User',
+      avatarUrl: '/login.png',
       role: 1,
+      status: 1,
       jwtToken: 'jwt-login',
     })
     const store = useAuthStore()
@@ -77,14 +110,20 @@ describe('auth store', () => {
 
     expect(store.isAuthenticated).toBe(true)
     expect(localStorage.getItem('jwt')).toBe('jwt-login')
+    expect(store.currentUser?.nickname).toBe('Login User')
+    expect(store.currentUser?.avatarUrl).toBe('/login.png')
+    expect(store.currentUser?.status).toBe(1)
     expect(loginMock).toHaveBeenCalledOnce()
   })
 
-  it('registerAndLogin stores jwtToken from api', async () => {
+  it('registerAndLogin stores auth fields from api response', async () => {
     registerMock.mockResolvedValueOnce({
       id: 11,
       username: 'demo-register',
+      nickname: 'Register User',
+      avatarUrl: '/register.png',
       role: 0,
+      status: 1,
       jwtToken: 'jwt-register',
     })
     const store = useAuthStore()
@@ -98,24 +137,34 @@ describe('auth store', () => {
     expect(store.isAuthenticated).toBe(true)
     expect(store.isAdmin).toBe(true)
     expect(localStorage.getItem('jwt')).toBe('jwt-register')
+    expect(store.currentUser?.nickname).toBe('Register User')
+    expect(store.currentUser?.avatarUrl).toBe('/register.png')
+    expect(store.currentUser?.status).toBe(1)
     expect(registerMock).toHaveBeenCalledOnce()
   })
 
-  it('updateCurrentUser keeps existing token when jwtToken absent', () => {
+  it('updateCurrentUser keeps existing token and stored auth fields when jwtToken absent', () => {
     const store = useAuthStore()
 
     store.setAuth('token-3', {
       id: 12,
       username: 'before',
+      nickname: 'Before Name',
+      avatarUrl: '/before.png',
+      role: 1,
+      status: 1,
+      jwtToken: 'token-3',
     })
 
     store.updateCurrentUser({
       id: 12,
       username: 'after',
-      email: 'after@example.com',
     })
 
     expect(store.currentUser?.username).toBe('after')
+    expect(store.currentUser?.nickname).toBe('Before Name')
+    expect(store.currentUser?.avatarUrl).toBe('/before.png')
+    expect(store.currentUser?.status).toBe(1)
     expect(localStorage.getItem('jwt')).toBe('token-3')
   })
 
@@ -125,6 +174,11 @@ describe('auth store', () => {
     store.setAuth('token-old', {
       id: 13,
       username: 'user13',
+      nickname: 'User 13',
+      avatarUrl: '/13.png',
+      role: 1,
+      status: 1,
+      jwtToken: 'token-old',
     })
 
     store.updateCurrentUser({

@@ -2,7 +2,7 @@
   <li class="comment-item">
     <div class="head">
       <RouterLink :to="`/user/${comment.userId}`">@{{ displayName }}</RouterLink>
-      <span>{{ comment.createTime ?? '' }}</span>
+      <span>{{ displayTime }}</span>
     </div>
 
     <div v-if="isEditing">
@@ -18,6 +18,7 @@
     </div>
 
     <div v-else>
+      <p v-if="replyLabel" class="reply-label">{{ replyLabel }}</p>
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="content" v-html="renderedHtml" />
       <div v-if="canEdit || canDelete" class="actions">
@@ -27,6 +28,25 @@
         </button>
       </div>
     </div>
+
+    <ul v-if="children.length > 0" class="child-list">
+      <CommentItem
+        v-for="child in children"
+        :key="child.id"
+        :comment="child"
+        :children="child.children ?? []"
+        :can-edit="resolveCanEdit ? resolveCanEdit(child) : false"
+        :can-delete="resolveCanDelete ? resolveCanDelete(child) : false"
+        :is-saving="activeSavingId === child.id"
+        :is-deleting="activeDeletingId === child.id"
+        :resolve-can-edit="resolveCanEdit"
+        :resolve-can-delete="resolveCanDelete"
+        :active-saving-id="activeSavingId"
+        :active-deleting-id="activeDeletingId"
+        @update="emit('update', $event)"
+        @delete="emit('delete', $event)"
+      />
+    </ul>
   </li>
 </template>
 
@@ -44,12 +64,22 @@ const props = withDefaults(
     canDelete?: boolean
     isSaving?: boolean
     isDeleting?: boolean
+    children?: CommentModel[]
+    resolveCanEdit?: (comment: CommentModel) => boolean
+    resolveCanDelete?: (comment: CommentModel) => boolean
+    activeSavingId?: number | null
+    activeDeletingId?: number | null
   }>(),
   {
     canEdit: false,
     canDelete: false,
     isSaving: false,
     isDeleting: false,
+    children: () => [],
+    resolveCanEdit: undefined,
+    resolveCanDelete: undefined,
+    activeSavingId: null,
+    activeDeletingId: null,
   },
 )
 
@@ -62,7 +92,26 @@ const isEditing = ref(false)
 const editDraft = ref(props.comment.content)
 
 const displayName = computed(() => props.comment.userName ?? props.comment.username ?? 'unknown')
+const displayTime = computed(() => props.comment.createdTime ?? props.comment.createTime ?? '')
 const renderedHtml = computed(() => renderMarkdown(props.comment.content ?? ''))
+const replyLabel = computed(() => {
+  const replyUserName = props.comment.replyUserName
+  const replyToCommentId = props.comment.replyToCommentId
+
+  if (replyUserName && replyToCommentId != null) {
+    return `Reply @${replyUserName} · #${replyToCommentId}`
+  }
+
+  if (replyUserName) {
+    return `Reply @${replyUserName}`
+  }
+
+  if (replyToCommentId != null) {
+    return `Reply #${replyToCommentId}`
+  }
+
+  return ''
+})
 
 watch(
   () => props.comment.content,
@@ -118,9 +167,24 @@ function cancelEdit(): void {
   line-height: 1.6;
 }
 
+.reply-label {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.88rem;
+}
+
 .actions {
   display: flex;
   gap: 0.55rem;
+}
+
+.child-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1rem;
+  display: grid;
+  gap: 0.7rem;
+  border-left: 2px solid var(--color-border);
 }
 
 button {

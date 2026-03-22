@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { login, register, type LoginPayload, type RegisterPayload } from '@/api/modules/user'
-import type { User } from '@/types/user'
+import type { AuthUser, StoredUser, User } from '@/types/user'
 
 const JWT_KEY = 'jwt'
 const USER_KEY = 'user'
@@ -14,11 +14,22 @@ function readStoredUser(): User | null {
   }
 
   try {
-    return JSON.parse(raw) as User
+    return JSON.parse(raw) as StoredUser
   } catch (error) {
     console.error('[auth] failed to parse stored user', error)
     localStorage.removeItem(USER_KEY)
     return null
+  }
+}
+
+function toStoredUser(user: User): StoredUser {
+  return {
+    id: user.id,
+    username: user.username,
+    nickname: user.nickname ?? '',
+    avatarUrl: user.avatarUrl ?? '',
+    role: user.role ?? 1,
+    status: user.status ?? 1,
   }
 }
 
@@ -36,11 +47,13 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = readStoredUser()
   }
 
-  function setAuth(nextToken: string, nextUser: User): void {
+  function setAuth(nextToken: string, nextUser: AuthUser): void {
+    const storedUser = toStoredUser(nextUser)
+
     token.value = nextToken
-    user.value = nextUser
+    user.value = storedUser
     localStorage.setItem(JWT_KEY, nextToken)
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
+    localStorage.setItem(USER_KEY, JSON.stringify(storedUser))
   }
 
   function clearAuth(): void {
@@ -51,7 +64,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function updateCurrentUser(nextUser: User): void {
-    user.value = nextUser
+    const mergedUser = {
+      ...user.value,
+      ...nextUser,
+    } as User
+
+    user.value = mergedUser
 
     const nextToken = nextUser.jwtToken ?? token.value
     if (nextToken) {
@@ -59,10 +77,10 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem(JWT_KEY, nextToken)
     }
 
-    localStorage.setItem(USER_KEY, JSON.stringify(nextUser))
+    localStorage.setItem(USER_KEY, JSON.stringify(toStoredUser(mergedUser)))
   }
 
-  function resolveToken(nextUser: User): string {
+  function resolveToken(nextUser: AuthUser): string {
     if (!nextUser.jwtToken) {
       throw new Error('Missing jwtToken in auth response')
     }

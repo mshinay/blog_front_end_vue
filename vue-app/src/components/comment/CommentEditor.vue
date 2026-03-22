@@ -32,6 +32,7 @@ const props = withDefaults(
     disabled?: boolean
     loading?: boolean
     showCancel?: boolean
+    resetKey?: number
   }>(),
   {
     modelValue: '',
@@ -42,6 +43,7 @@ const props = withDefaults(
     disabled: false,
     loading: false,
     showCancel: false,
+    resetKey: 0,
   },
 )
 
@@ -61,6 +63,14 @@ watch(
   },
 )
 
+watch(
+  () => props.resetKey,
+  () => {
+    draft.value = props.modelValue
+    errorMessage.value = ''
+  },
+)
+
 function handleSubmit(): void {
   const value = draft.value.trim()
   if (!value) {
@@ -70,10 +80,6 @@ function handleSubmit(): void {
 
   errorMessage.value = ''
   emit('submit', value)
-
-  if (!props.showCancel) {
-    draft.value = ''
-  }
 }
 </script>
 

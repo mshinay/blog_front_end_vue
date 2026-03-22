@@ -46,5 +46,8 @@ export interface CommentItem extends Partial<CommentRecord> {
   userName?: string
   username?: string
   createTime?: string
+  replyUserName?: string | null
+  replyToCommentId?: number | null
+  children?: CommentItem[]
   status?: number
 }

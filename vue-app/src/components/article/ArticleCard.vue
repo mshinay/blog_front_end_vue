@@ -1,11 +1,22 @@
 <template>
   <article class="article-card">
     <RouterLink :to="`/article/${article.id}`" class="article-link">
-      <h3>{{ article.title }}</h3>
-      <p>{{ summaryText }}</p>
-      <div class="meta">
-        <span>{{ article.authorName ?? 'Unknown author' }}</span>
-        <span>{{ article.createTime ?? '' }}</span>
+      <img
+        v-if="article.coverUrl"
+        class="cover"
+        :src="article.coverUrl"
+        :alt="article.title"
+      />
+      <div class="content">
+        <h3>{{ article.title }}</h3>
+        <p>{{ summaryText }}</p>
+        <div v-if="resolvedTagList.length > 0" class="tags">
+          <span v-for="tag in resolvedTagList" :key="tag.id" class="tag">{{ tag.name }}</span>
+        </div>
+        <div class="meta">
+          <span>{{ article.authorName || 'Unknown author' }}</span>
+          <span>{{ article.publishTime || article.createTime || '' }}</span>
+        </div>
       </div>
     </RouterLink>
   </article>
@@ -14,29 +25,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { markdownToPlainText } from '@/utils/markdown'
-import type { Article } from '@/types/article'
+import type { ArticleCardModel } from '@/types/article'
 
 const props = defineProps<{
-  article: Article
+  article: ArticleCardModel
 }>()
 
-const summaryText = computed(() => {
-  if (props.article.summary) {
-    return props.article.summary
-  }
-
-  if (!props.article.content) {
-    return 'No summary available.'
-  }
-
-  const plain = markdownToPlainText(props.article.content)
-  if (plain.length <= 140) {
-    return plain
-  }
-
-  return `${plain.slice(0, 140)}...`
-})
+const summaryText = computed(() => props.article.summary || 'No summary available.')
+const resolvedTagList = computed(() => props.article.tagList ?? [])
 </script>
 
 <style scoped>
@@ -53,9 +49,24 @@ const summaryText = computed(() => {
 }
 
 .article-link {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
   padding: 1rem;
   text-decoration: none;
+}
+
+.cover {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #eef2f6;
+}
+
+.content {
+  min-width: 0;
 }
 
 h3 {
@@ -69,14 +80,34 @@ p {
   line-height: 1.5;
 }
 
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.8rem;
+}
+
+.tag {
+  border-radius: 999px;
+  background: #edf3fb;
+  color: #1f4f92;
+  font-size: 0.75rem;
+  padding: 0.18rem 0.55rem;
+}
+
 .meta {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
   color: var(--color-muted);
+  gap: 0.75rem;
 }
 
 @media (max-width: 768px) {
+  .article-link {
+    grid-template-columns: 1fr;
+  }
+
   .meta {
     gap: 0.4rem;
     flex-direction: column;

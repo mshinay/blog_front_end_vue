@@ -5,8 +5,9 @@
     <header v-else-if="userProfile" class="profile-card">
       <img :src="userProfile.avatarUrl || '/vite.svg'" alt="User avatar" />
       <div>
-        <h1>{{ userProfile.username }}</h1>
-        <p>Public profile and article feed</p>
+        <h1>{{ userProfile.nickname || userProfile.username }}</h1>
+        <p class="username">@{{ userProfile.username }}</p>
+        <p>{{ userProfile.bio || 'This user has not added a bio yet.' }}</p>
       </div>
     </header>
 
@@ -47,11 +48,11 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 import type { Article } from '@/types/article'
-import type { User } from '@/types/user'
+import type { UserProfile } from '@/types/user'
 
 const route = useRoute()
 
-const userProfile = ref<User | null>(null)
+const userProfile = ref<UserProfile | null>(null)
 const isProfileLoading = ref(false)
 const profileError = ref('')
 
@@ -203,6 +204,10 @@ h1 {
 .profile-card p {
   margin: 0.35rem 0 0;
   color: var(--color-muted);
+}
+
+.profile-card .username {
+  font-weight: 600;
 }
 
 .search-form {

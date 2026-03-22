@@ -9,23 +9,27 @@
       </form>
     </header>
 
-    <div v-if="groups.length > 0" class="groups">
-      <article v-for="group in groups" :key="group.articleId" class="group-card">
+    <div v-if="comments.length > 0" class="groups">
+      <article v-for="comment in comments" :key="comment.commentId" class="group-card">
         <h3>
-          <RouterLink :to="`/article/${group.articleId}`">{{ group.articleTitle || 'Untitled article' }}</RouterLink>
+          <RouterLink :to="`/article/${comment.articleId}`">{{ comment.articleTitle || 'Untitled article' }}</RouterLink>
         </h3>
         <ul class="comment-list">
-          <li v-for="comment in group.comments" :key="comment.id" class="comment-item">
-            <p class="meta">@{{ comment.userName ?? comment.username ?? 'unknown' }} · {{ comment.createTime ?? '' }}</p>
+          <li class="comment-item">
+            <p class="meta">
+              @{{ comment.userName || 'unknown' }}
+              <span v-if="comment.replyUserName"> reply @{{ comment.replyUserName }}</span>
+              · {{ comment.createdTime || '' }}
+            </p>
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="content" v-html="renderMarkdown(comment.content ?? '')" />
+            <div class="content" v-html="renderMarkdown(comment.content || '')" />
             <button
               type="button"
               class="danger"
-              :disabled="deletingId === comment.id"
-              @click="deleteCommentFromAdmin(comment.id)"
+              :disabled="deletingId === comment.commentId"
+              @click="deleteCommentFromAdmin(comment.commentId)"
             >
-              {{ deletingId === comment.id ? 'Deleting...' : 'Delete' }}
+              {{ deletingId === comment.commentId ? 'Deleting...' : 'Delete' }}
             </button>
           </li>
         </ul>
@@ -35,7 +39,7 @@
     <EmptyState v-else-if="!isLoading && !errorMessage" message="No admin comments found." />
     <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
     <LoadingState v-if="isLoading" />
-    <p v-if="allLoaded && groups.length > 0" class="end-text">No more comments.</p>
+    <p v-if="allLoaded && comments.length > 0" class="end-text">No more comments.</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
@@ -49,7 +53,7 @@ import {
   deleteComment,
   getAdminCommentList,
   searchAdminComments,
-  type AdminCommentGroup,
+  type AdminCommentRecord,
 } from '@/api/modules/comment'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
@@ -61,7 +65,7 @@ const router = useRouter()
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
-const groups = ref<AdminCommentGroup[]>([])
+const comments = ref<AdminCommentRecord[]>([])
 const page = ref(1)
 const pageSize = 10
 const isLoading = ref(false)
@@ -73,7 +77,7 @@ const sentinelRef = ref<HTMLElement | null>(null)
 const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
 
 function resetState(): void {
-  groups.value = []
+  comments.value = []
   page.value = 1
   allLoaded.value = false
   errorMessage.value = ''
@@ -98,7 +102,7 @@ async function loadMore(): Promise<void> {
       return
     }
 
-    groups.value.push(...records)
+    comments.value.push(...records)
     page.value += 1
   } catch (error) {
     if (error instanceof AppError) {
@@ -136,12 +140,7 @@ async function deleteCommentFromAdmin(commentId: number): Promise<void> {
 
   try {
     await deleteComment(commentId)
-    groups.value = groups.value
-      .map((group) => ({
-        ...group,
-        comments: group.comments.filter((comment) => comment.id !== commentId),
-      }))
-      .filter((group) => group.comments.length > 0)
+    comments.value = comments.value.filter((comment) => comment.commentId !== commentId)
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message

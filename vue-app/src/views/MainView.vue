@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { AppError } from '@/api/client'
@@ -38,19 +38,50 @@ import ArticleCard from '@/components/article/ArticleCard.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
-import type { Article } from '@/types/article'
+import type { ArticleListItem } from '@/types/article'
 
 const route = useRoute()
 
 const page = ref(1)
 const pageSize = 10
-const articles = ref<Article[]>([])
+const articles = ref<ArticleListItem[]>([])
 const isLoading = ref(false)
 const allLoaded = ref(false)
 const errorMessage = ref('')
 const sentinelRef = ref<HTMLElement | null>(null)
 
 const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
+const articleFilters = computed(() => ({
+  categoryId: resolveNumberQuery(route.query.categoryId),
+  tagId: resolveNumberQuery(route.query.tagId),
+  authorId: resolveNumberQuery(route.query.authorId),
+  slug: resolveStringQuery(route.query.slug),
+  keyword: resolveStringQuery(route.query.keyword) ?? resolveStringQuery(route.query.q),
+}))
+
+function resolveStringQuery(value: unknown): string | undefined {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim()
+  }
+
+  return undefined
+}
+
+function resolveNumberQuery(value: unknown): number | undefined {
+  if (typeof value !== 'string' || !value.trim()) {
+    return undefined
+  }
+
+  const parsed = Number(value)
+  return Number.isNaN(parsed) ? undefined : parsed
+}
+
+function resetArticleList(): void {
+  page.value = 1
+  articles.value = []
+  allLoaded.value = false
+  errorMessage.value = ''
+}
 
 async function loadMoreArticles(): Promise<void> {
   if (isLoading.value || allLoaded.value) {
@@ -61,7 +92,7 @@ async function loadMoreArticles(): Promise<void> {
   errorMessage.value = ''
 
   try {
-    const pageResult = await getArticleList(page.value, pageSize)
+    const pageResult = await getArticleList(page.value, pageSize, articleFilters.value)
     const records = pageResult.records ?? []
 
     if (records.length === 0) {
@@ -86,7 +117,14 @@ useInfiniteScroll(sentinelRef, loadMoreArticles, {
   enabled: observerEnabled,
 })
 
-loadMoreArticles()
+watch(
+  articleFilters,
+  () => {
+    resetArticleList()
+    void loadMoreArticles()
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>
