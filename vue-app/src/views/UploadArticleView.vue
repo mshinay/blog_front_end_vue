@@ -9,8 +9,12 @@
 
     <article class="editor-card">
       <ArticleEditor
+        :categories="categories"
+        :tags="tags"
+        :require-full-payload="true"
         submit-text="Publish"
         submitting-text="Publishing..."
+        :loading="isBootstrapping"
         :submitting="isSubmitting"
         @submit="handlePublish"
       />
@@ -19,18 +23,59 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { AppError } from '@/api/client'
 import { createArticle } from '@/api/modules/article'
+import { getCategoryList } from '@/api/modules/category'
+import { getTagList } from '@/api/modules/tag'
 import ArticleEditor from '@/components/article/ArticleEditor.vue'
+import type { CategoryListItem } from '@/types/category'
+import type { ArticlePayload } from '@/types/article'
+import type { TagListItem } from '@/types/tag'
+
+interface BasicArticleSubmitPayload {
+  title: string
+  content: string
+}
 
 const router = useRouter()
+const categories = ref<CategoryListItem[]>([])
+const tags = ref<TagListItem[]>([])
+const isBootstrapping = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 
-async function handlePublish(payload: { title: string; content: string }): Promise<void> {
+async function loadEditorOptions(): Promise<void> {
+  isBootstrapping.value = true
+  errorMessage.value = ''
+
+  try {
+    const [categoryResult, tagResult] = await Promise.all([getCategoryList(), getTagList()])
+    categories.value = categoryResult.records ?? []
+    tags.value = tagResult.records ?? []
+  } catch (error) {
+    if (error instanceof AppError) {
+      errorMessage.value = error.message
+    } else {
+      errorMessage.value = 'Failed to load category and tag options.'
+    }
+  } finally {
+    isBootstrapping.value = false
+  }
+}
+
+function isArticlePayload(payload: ArticlePayload | BasicArticleSubmitPayload): payload is ArticlePayload {
+  return 'slug' in payload
+}
+
+async function handlePublish(payload: ArticlePayload | BasicArticleSubmitPayload): Promise<void> {
+  if (!isArticlePayload(payload)) {
+    errorMessage.value = 'Publish form is incomplete.'
+    return
+  }
+
   isSubmitting.value = true
   errorMessage.value = ''
 
@@ -41,7 +86,7 @@ async function handlePublish(payload: { title: string; content: string }): Promi
       return
     }
 
-    await router.push('/main')
+    errorMessage.value = 'Publish succeeded but article id is invalid.'
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message
@@ -52,6 +97,10 @@ async function handlePublish(payload: { title: string; content: string }): Promi
     isSubmitting.value = false
   }
 }
+
+onMounted(() => {
+  void loadEditorOptions()
+})
 </script>
 
 <style scoped>

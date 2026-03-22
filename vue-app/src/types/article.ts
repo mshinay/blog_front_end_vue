@@ -35,12 +35,12 @@ export interface ArticleDetail {
   summary: string
   coverUrl: string
   content: string
-  contentType: string
+  contentType: 'markdown' | 'html'
   author: UserProfile
   category: CategoryListItem
   tags: TagListItem[]
   stats: ArticleStats
-  allowComment: number
+  allowComment: 0 | 1
   publishTime: string
   updatedTime: string
   wordCount: number
@@ -60,9 +60,9 @@ export interface AdminArticleItem {
   authorName: string
   categoryId: number
   categoryName: string
-  status: number
+  status: 0 | 1 | 2
   isTop: number
-  allowComment: number
+  allowComment: 0 | 1
   publishTime: string
   updatedTime: string
   viewCount: number
@@ -76,11 +76,15 @@ export interface ArticlePayload {
   summary: string
   coverUrl: string
   content: string
-  contentType: string
+  contentType: 'markdown' | 'html'
   categoryId: number
   tagIds: number[]
-  allowComment: number
-  status: number
+  allowComment: 0 | 1
+  status: 0 | 1 | 2
+}
+
+export interface ArticleUpdatePayload extends ArticlePayload {
+  id: number
 }
 
 export interface Article extends Partial<ArticleListItem>, Partial<ArticleDetail>, Partial<AdminArticleItem> {

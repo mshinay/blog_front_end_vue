@@ -1,13 +1,7 @@
 import apiClient, { unwrapData } from '@/api/client'
 
 import type { ApiResponse, PageResult } from '@/types/api'
-import type { Article, ArticleListItem, ArticlePayload } from '@/types/article'
-
-export interface ArticleMutationPayload extends Partial<ArticlePayload> {
-  id?: number
-  title: string
-  content: string
-}
+import type { Article, ArticleListItem, ArticlePayload, ArticleUpdatePayload } from '@/types/article'
 
 export interface ArticleListQuery {
   categoryId?: number
@@ -91,13 +85,11 @@ export function getArticleDetail(articleId: string | number): Promise<Article> {
   return apiClient.get<ApiResponse<Article>>(`/api/articles/${articleId}`).then(unwrapData)
 }
 
-export function createArticle(payload: ArticleMutationPayload): Promise<number> {
+export function createArticle(payload: ArticlePayload): Promise<number> {
   return apiClient.post<ApiResponse<number>>('/api/articles', payload).then(unwrapData)
 }
 
-export function updateArticle(
-  payload: Required<Pick<ArticleMutationPayload, 'id'>> & ArticleMutationPayload,
-): Promise<Article> {
+export function updateArticle(payload: ArticleUpdatePayload): Promise<Article> {
   return apiClient.post<ApiResponse<Article>>('/article/edit', payload).then(unwrapData)
 }
 

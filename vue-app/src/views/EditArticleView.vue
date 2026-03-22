@@ -11,7 +11,17 @@
     <article v-else-if="article" class="editor-card">
       <ArticleEditor
         :initial-title="article.title"
+        :initial-slug="article.slug ?? ''"
+        :initial-summary="article.summary ?? ''"
+        :initial-cover-url="article.coverUrl ?? ''"
         :initial-content="article.content ?? ''"
+        :initial-category-id="article.category?.id ?? null"
+        :initial-tag-ids="article.tags?.map((tag) => tag.id) ?? []"
+        :initial-allow-comment="article.allowComment ?? 1"
+        :initial-status="article.status ?? 1"
+        :categories="resolvedCategories"
+        :tags="resolvedTags"
+        :require-full-payload="true"
         submit-text="Save Changes"
         submitting-text="Saving..."
         :submitting="isSubmitting"
@@ -24,15 +34,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { AppError } from '@/api/client'
 import { getArticleDetail, updateArticle } from '@/api/modules/article'
-import ArticleEditor from '@/components/article/ArticleEditor.vue'
+import ArticleEditor, { type BasicArticleSubmitPayload } from '@/components/article/ArticleEditor.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useAuthStore } from '@/stores/auth'
-import type { Article } from '@/types/article'
+import type { Article, ArticlePayload } from '@/types/article'
 
 const route = useRoute()
 const router = useRouter()
@@ -42,6 +52,8 @@ const article = ref<Article | null>(null)
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
+const resolvedCategories = computed(() => (article.value?.category ? [article.value.category] : []))
+const resolvedTags = computed(() => article.value?.tags ?? [])
 
 function currentArticleId(): number | null {
   const raw = route.params.articleId
@@ -55,6 +67,8 @@ function currentArticleId(): number | null {
 
 async function loadEditableArticle(): Promise<void> {
   const articleId = currentArticleId()
+  article.value = null
+
   if (!articleId) {
     errorMessage.value = 'Invalid article id.'
     return
@@ -67,7 +81,7 @@ async function loadEditableArticle(): Promise<void> {
     const detail = await getArticleDetail(articleId)
     const currentUserId = authStore.currentUser?.id
 
-    if (!currentUserId || currentUserId !== detail.authorId) {
+    if (!currentUserId || currentUserId !== detail.author?.id) {
       errorMessage.value = 'You do not have permission to edit this article.'
       article.value = null
       await router.push(`/article/${articleId}`)
@@ -86,8 +100,17 @@ async function loadEditableArticle(): Promise<void> {
   }
 }
 
-async function handleUpdate(payload: { title: string; content: string }): Promise<void> {
+function isArticlePayload(payload: ArticlePayload | BasicArticleSubmitPayload): payload is ArticlePayload {
+  return 'slug' in payload
+}
+
+async function handleUpdate(payload: ArticlePayload | BasicArticleSubmitPayload): Promise<void> {
   if (!article.value) {
+    return
+  }
+
+  if (!isArticlePayload(payload)) {
+    errorMessage.value = 'Edit form is incomplete.'
     return
   }
 
@@ -97,8 +120,7 @@ async function handleUpdate(payload: { title: string; content: string }): Promis
   try {
     await updateArticle({
       id: article.value.id,
-      title: payload.title,
-      content: payload.content,
+      ...payload,
     })
 
     await router.push(`/article/${article.value.id}`)
