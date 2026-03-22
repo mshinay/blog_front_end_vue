@@ -21,6 +21,11 @@
               <span v-if="comment.replyUserName"> reply @{{ comment.replyUserName }}</span>
               · {{ comment.createdTime || '' }}
             </p>
+            <p class="meta">
+              Article Status: {{ formatArticleStatus(comment.articleStatus) }}
+              · Comment Status: {{ formatCommentStatus(comment.status) }}
+              · Updated: {{ comment.updatedTime || '' }}
+            </p>
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div class="content" v-html="renderMarkdown(comment.content || '')" />
             <button
@@ -49,25 +54,21 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { AppError } from '@/api/client'
-import {
-  deleteComment,
-  getAdminCommentList,
-  searchAdminComments,
-  type AdminCommentRecord,
-} from '@/api/modules/comment'
+import { deleteComment, getAdminCommentList } from '@/api/modules/comment'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
+import type { AdminCommentItem } from '@/types/comment'
 import { renderMarkdown } from '@/utils/markdown'
 
 const route = useRoute()
 const router = useRouter()
+const pageSize = 10
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
-const comments = ref<AdminCommentRecord[]>([])
+const comments = ref<AdminCommentItem[]>([])
 const page = ref(1)
-const pageSize = 10
 const isLoading = ref(false)
 const allLoaded = ref(false)
 const errorMessage = ref('')
@@ -76,11 +77,43 @@ const sentinelRef = ref<HTMLElement | null>(null)
 
 const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
 
+function formatArticleStatus(status: AdminCommentItem['articleStatus']): string {
+  if (status === 0) {
+    return 'Draft'
+  }
+
+  if (status === 1) {
+    return 'Published'
+  }
+
+  return 'Deleted'
+}
+
+function formatCommentStatus(status: AdminCommentItem['status']): string {
+  if (status === 0) {
+    return 'Hidden'
+  }
+
+  if (status === 1) {
+    return 'Normal'
+  }
+
+  return 'Deleted'
+}
+
 function resetState(): void {
   comments.value = []
   page.value = 1
   allLoaded.value = false
   errorMessage.value = ''
+}
+
+function buildAdminCommentQuery(currentPage: number) {
+  return {
+    page: currentPage,
+    pageSize,
+    ...(activeKeyword.value ? { keyword: activeKeyword.value } : {}),
+  }
 }
 
 async function loadMore(): Promise<void> {
@@ -92,9 +125,7 @@ async function loadMore(): Promise<void> {
   errorMessage.value = ''
 
   try {
-    const result = activeKeyword.value
-      ? await searchAdminComments(activeKeyword.value, page.value, pageSize)
-      : await getAdminCommentList(page.value, pageSize)
+    const result = await getAdminCommentList(buildAdminCommentQuery(page.value))
 
     const records = result.records ?? []
     if (records.length === 0) {
@@ -112,6 +143,19 @@ async function loadMore(): Promise<void> {
     }
   } finally {
     isLoading.value = false
+  }
+}
+
+async function refreshList(): Promise<void> {
+  const pagesToReload = Math.max(page.value - 1, 1)
+  resetState()
+
+  for (let currentPage = 1; currentPage <= pagesToReload; currentPage += 1) {
+    await loadMore()
+
+    if (allLoaded.value) {
+      break
+    }
   }
 }
 
@@ -140,7 +184,7 @@ async function deleteCommentFromAdmin(commentId: number): Promise<void> {
 
   try {
     await deleteComment(commentId)
-    comments.value = comments.value.filter((comment) => comment.commentId !== commentId)
+    await refreshList()
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message

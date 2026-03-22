@@ -12,7 +12,15 @@
     <ul v-if="articles.length > 0" class="list">
       <li v-for="article in articles" :key="article.id" class="item">
         <RouterLink class="title" :to="`/article/${article.id}`">{{ article.title }}</RouterLink>
-        <span class="meta">{{ article.authorName ?? 'Unknown author' }} · {{ article.createTime ?? '' }}</span>
+        <div class="meta-grid">
+          <span class="meta"><strong>Author:</strong> {{ article.authorName }}</span>
+          <span class="meta"><strong>Category:</strong> {{ article.categoryName }}</span>
+          <span class="meta"><strong>Status:</strong> {{ formatStatus(article.status) }}</span>
+          <span class="meta"><strong>Top:</strong> {{ formatBoolean(article.isTop) }}</span>
+          <span class="meta"><strong>Comments:</strong> {{ formatBoolean(article.allowComment) }}</span>
+          <span class="meta"><strong>Published:</strong> {{ article.publishTime }}</span>
+          <span class="meta"><strong>Updated:</strong> {{ article.updatedTime }}</span>
+        </div>
         <button
           type="button"
           class="danger"
@@ -38,24 +46,20 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { AppError } from '@/api/client'
-import {
-  deleteArticle,
-  getAdminArticleList,
-  searchAdminArticles,
-} from '@/api/modules/article'
+import { deleteArticle, getAdminArticleList } from '@/api/modules/article'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
-import type { Article } from '@/types/article'
+import type { AdminArticleItem } from '@/types/article'
 
 const route = useRoute()
 const router = useRouter()
+const pageSize = 10
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
-const articles = ref<Article[]>([])
+const articles = ref<AdminArticleItem[]>([])
 const page = ref(1)
-const pageSize = 10
 const isLoading = ref(false)
 const allLoaded = ref(false)
 const errorMessage = ref('')
@@ -64,11 +68,35 @@ const sentinelRef = ref<HTMLElement | null>(null)
 
 const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
 
+function formatStatus(status: AdminArticleItem['status']): string {
+  if (status === 0) {
+    return 'Draft'
+  }
+
+  if (status === 1) {
+    return 'Published'
+  }
+
+  return 'Deleted'
+}
+
+function formatBoolean(value: number): string {
+  return value === 1 ? 'Yes' : 'No'
+}
+
 function resetState(): void {
   articles.value = []
   page.value = 1
   allLoaded.value = false
   errorMessage.value = ''
+}
+
+function buildAdminArticleQuery(currentPage: number) {
+  return {
+    page: currentPage,
+    pageSize,
+    ...(activeKeyword.value ? { keyword: activeKeyword.value } : {}),
+  }
 }
 
 async function loadMore(): Promise<void> {
@@ -80,9 +108,7 @@ async function loadMore(): Promise<void> {
   errorMessage.value = ''
 
   try {
-    const result = activeKeyword.value
-      ? await searchAdminArticles(activeKeyword.value, page.value, pageSize)
-      : await getAdminArticleList(page.value, pageSize)
+    const result = await getAdminArticleList(buildAdminArticleQuery(page.value))
 
     const records = result.records ?? []
     if (records.length === 0) {
@@ -100,6 +126,19 @@ async function loadMore(): Promise<void> {
     }
   } finally {
     isLoading.value = false
+  }
+}
+
+async function refreshList(): Promise<void> {
+  const pagesToReload = Math.max(page.value - 1, 1)
+  resetState()
+
+  for (let currentPage = 1; currentPage <= pagesToReload; currentPage += 1) {
+    await loadMore()
+
+    if (allLoaded.value) {
+      break
+    }
   }
 }
 
@@ -127,7 +166,7 @@ async function deleteFromAdmin(articleId: number): Promise<void> {
   errorMessage.value = ''
   try {
     await deleteArticle(articleId)
-    articles.value = articles.value.filter((item) => item.id !== articleId)
+    await refreshList()
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message
@@ -205,6 +244,11 @@ header p {
   padding: 0.8rem;
   display: grid;
   gap: 0.4rem;
+}
+
+.meta-grid {
+  display: grid;
+  gap: 0.25rem;
 }
 
 .title {

@@ -3,6 +3,7 @@
     <header>
       <h2>My Comments</h2>
       <p>Review and maintain your comment history.</p>
+      <p class="notice">Non-standard API dependency: this panel still relies on legacy user comment endpoints because no standard user comment list API is defined in the interface document.</p>
       <form class="search-form" @submit.prevent="submitSearch">
         <input v-model.trim="keywordInput" type="text" placeholder="Search your comments" />
         <button type="submit">Search</button>
@@ -76,6 +77,9 @@ import type { CommentItem } from '@/types/comment'
 import { renderMarkdown } from '@/utils/markdown'
 
 const authStore = useAuthStore()
+// Non-standard API dependency point:
+// the interface document does not define a standard user-comment list endpoint,
+// so this panel intentionally stays on legacy user comment APIs.
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
@@ -245,6 +249,15 @@ h2 {
 header p {
   margin: 0.35rem 0 0;
   color: var(--color-muted);
+}
+
+.notice {
+  margin-top: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: #fff8e8;
+  color: #8a5a00;
+  padding: 0.65rem 0.75rem;
 }
 
 .search-form {

@@ -2,6 +2,7 @@ import apiClient, { unwrapData } from '@/api/client'
 
 import type { ApiResponse, PageResult } from '@/types/api'
 import type {
+  AdminCommentListQuery,
   AdminCommentItem,
   CommentNode,
   CommentRecord,
@@ -51,33 +52,47 @@ export function deleteComment(commentId: string | number): Promise<void> {
   return apiClient.delete<ApiResponse<null>>(`/comment/${commentId}`).then(() => undefined)
 }
 
-export type AdminCommentRecord = AdminCommentItem
+type AdminCommentListFilters = Omit<AdminCommentListQuery, 'page' | 'pageSize'>
+
+function resolveAdminCommentListQuery(
+  pageOrQuery: number | AdminCommentListQuery,
+  pageSize?: number,
+  filters: AdminCommentListFilters = {},
+): AdminCommentListQuery {
+  if (typeof pageOrQuery === 'number') {
+    return {
+      ...filters,
+      page: pageOrQuery,
+      pageSize: pageSize ?? 10,
+    }
+  }
+
+  return pageOrQuery
+}
 
 export function getAdminCommentList(
   page: number,
   pageSize: number,
-  filters?: {
-    userId?: number
-    articleId?: number
-    status?: number
-    keyword?: string
-  },
-): Promise<PageResult<AdminCommentRecord>> {
+  filters?: AdminCommentListFilters,
+): Promise<PageResult<AdminCommentItem>>
+export function getAdminCommentList(query: AdminCommentListQuery): Promise<PageResult<AdminCommentItem>>
+export function getAdminCommentList(
+  pageOrQuery: number | AdminCommentListQuery,
+  pageSize?: number,
+  filters?: AdminCommentListFilters,
+): Promise<PageResult<AdminCommentItem>> {
+  const params = resolveAdminCommentListQuery(pageOrQuery, pageSize, filters)
+
   return apiClient
-    .get<ApiResponse<PageResult<AdminCommentRecord>>>('/api/admin/comments', {
-      params: { ...filters, page, pageSize },
+    .get<ApiResponse<PageResult<AdminCommentItem>>>('/api/admin/comments', {
+      params,
     })
     .then(unwrapData)
 }
 
-export function searchAdminComments(
-  keyword: string,
-  page: number,
-  pageSize: number,
-): Promise<PageResult<AdminCommentRecord>> {
-  return getAdminCommentList(page, pageSize, { keyword })
-}
-
+// Non-standard dependency point:
+// the interface document does not define a standard "user comment list" endpoint,
+// so personal-center comment history remains on legacy endpoints for now.
 export function getUserCommentList(
   userId: string | number,
   page: number,
@@ -90,6 +105,8 @@ export function getUserCommentList(
     .then(unwrapData)
 }
 
+// Non-standard dependency point:
+// keyword search for user comments also depends on the same legacy user-comment API family.
 export function searchUserComments(
   userId: string | number,
   keyword: string,

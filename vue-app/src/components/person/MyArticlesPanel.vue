@@ -13,8 +13,8 @@
     <ul v-if="articles.length > 0" class="list">
       <li v-for="article in articles" :key="article.id" class="item">
         <RouterLink class="title" :to="`/article/${article.id}`">{{ article.title }}</RouterLink>
-        <p class="summary">{{ resolveSummary(article.summary, article.content) }}</p>
-        <p class="meta">{{ article.createTime ?? '' }}</p>
+        <p class="summary">{{ resolveSummary(article.summary) }}</p>
+        <p class="meta">{{ article.publishTime ?? '' }}</p>
         <div class="actions">
           <RouterLink
             v-if="canEditArticle(authStore.currentUser, article)"
@@ -49,26 +49,21 @@
 import { computed, ref, watch } from 'vue'
 
 import { AppError } from '@/api/client'
-import {
-  deleteArticle,
-  getUserArticleList,
-  searchUserArticles,
-} from '@/api/modules/article'
+import { deleteArticle, getArticleList } from '@/api/modules/article'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 import { useAuthStore } from '@/stores/auth'
-import type { Article } from '@/types/article'
+import type { ArticleListItem } from '@/types/article'
 import { canDeleteArticle, canEditArticle } from '@/utils/permissions'
-import { markdownToPlainText } from '@/utils/markdown'
 
 const authStore = useAuthStore()
+const pageSize = 10
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
-const articles = ref<Article[]>([])
+const articles = ref<ArticleListItem[]>([])
 const page = ref(1)
-const pageSize = 10
 const isLoading = ref(false)
 const allLoaded = ref(false)
 const errorMessage = ref('')
@@ -84,17 +79,21 @@ function resetState(): void {
   errorMessage.value = ''
 }
 
-function resolveSummary(summary?: string, content?: string): string {
+function resolveSummary(summary?: string): string {
   if (summary) {
     return summary
   }
 
-  if (!content) {
-    return 'No summary available.'
-  }
+  return 'No summary available.'
+}
 
-  const plain = markdownToPlainText(content)
-  return plain.length > 160 ? `${plain.slice(0, 160)}...` : plain
+function buildArticleQuery(authorId: number, currentPage: number) {
+  return {
+    authorId,
+    page: currentPage,
+    pageSize,
+    ...(activeKeyword.value ? { keyword: activeKeyword.value } : {}),
+  }
 }
 
 async function loadMore(): Promise<void> {
@@ -112,9 +111,7 @@ async function loadMore(): Promise<void> {
   isLoading.value = true
   errorMessage.value = ''
   try {
-    const result = activeKeyword.value
-      ? await searchUserArticles(userId, activeKeyword.value, page.value, pageSize)
-      : await getUserArticleList(userId, page.value, pageSize)
+    const result = await getArticleList(buildArticleQuery(userId, page.value))
 
     const records = result.records ?? []
     if (records.length === 0) {

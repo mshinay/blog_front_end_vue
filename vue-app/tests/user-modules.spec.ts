@@ -67,10 +67,10 @@ describe('user/article/comment modules', () => {
     await getUserArticleList(2, 1, 10)
     await searchUserArticles(2, 'vue', 1, 10)
 
-    expect(getMock).toHaveBeenNthCalledWith(1, '/article/user', {
+    expect(getMock).toHaveBeenNthCalledWith(1, '/api/articles', {
       params: { authorId: 2, page: 1, pageSize: 10 },
     })
-    expect(getMock).toHaveBeenNthCalledWith(2, '/article/user/search', {
+    expect(getMock).toHaveBeenNthCalledWith(2, '/api/articles', {
       params: { authorId: 2, keyword: 'vue', page: 1, pageSize: 10 },
     })
   })

@@ -1,7 +1,13 @@
 import apiClient, { unwrapData } from '@/api/client'
 
 import type { ApiResponse, PageResult } from '@/types/api'
-import type { Article, ArticleListItem, ArticlePayload, ArticleUpdatePayload } from '@/types/article'
+import type {
+  AdminArticleItem,
+  Article,
+  ArticleListItem,
+  ArticlePayload,
+  ArticleUpdatePayload,
+} from '@/types/article'
 
 export interface ArticleListQuery {
   categoryId?: number
@@ -101,40 +107,32 @@ export function getAdminArticleList(
   page: number,
   pageSize: number,
   filters?: AdminArticleListFilters,
-): Promise<PageResult<Article>>
-export function getAdminArticleList(query: AdminArticleListQuery): Promise<PageResult<Article>>
+): Promise<PageResult<AdminArticleItem>>
+export function getAdminArticleList(query: AdminArticleListQuery): Promise<PageResult<AdminArticleItem>>
 export function getAdminArticleList(
   pageOrQuery: number | AdminArticleListQuery,
   pageSize?: number,
   filters?: AdminArticleListFilters,
-): Promise<PageResult<Article>> {
+): Promise<PageResult<AdminArticleItem>> {
   const params = resolveAdminArticleListQuery(pageOrQuery, pageSize, filters)
 
   return apiClient
-    .get<ApiResponse<PageResult<Article>>>('/api/admin/articles', {
+    .get<ApiResponse<PageResult<AdminArticleItem>>>('/api/admin/articles', {
       params,
     })
     .then(unwrapData)
-}
-
-export function searchAdminArticles(
-  keyword: string,
-  page: number,
-  pageSize: number,
-): Promise<PageResult<Article>> {
-  return getAdminArticleList(page, pageSize, { keyword })
 }
 
 export function getUserArticleList(
   authorId: string | number,
   page: number,
   pageSize: number,
-): Promise<PageResult<Article>> {
-  return apiClient
-    .get<ApiResponse<PageResult<Article>>>('/article/user', {
-      params: { authorId, page, pageSize },
-    })
-    .then(unwrapData)
+): Promise<PageResult<ArticleListItem>> {
+  return getArticleList({
+    authorId: Number(authorId),
+    page,
+    pageSize,
+  })
 }
 
 export function searchUserArticles(
@@ -142,10 +140,11 @@ export function searchUserArticles(
   keyword: string,
   page: number,
   pageSize: number,
-): Promise<PageResult<Article>> {
-  return apiClient
-    .get<ApiResponse<PageResult<Article>>>('/article/user/search', {
-      params: { authorId, keyword, page, pageSize },
-    })
-    .then(unwrapData)
+): Promise<PageResult<ArticleListItem>> {
+  return getArticleList({
+    authorId: Number(authorId),
+    keyword,
+    page,
+    pageSize,
+  })
 }
