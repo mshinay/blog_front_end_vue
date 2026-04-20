@@ -102,7 +102,12 @@ export interface ArticleCardModel {
   summary?: string
   coverUrl?: string
   authorName?: string
+  categoryName?: string
+  categorySlug?: string
   publishTime?: string
   createTime?: string
   tagList?: TagListItem[]
+  isTop?: number
+  viewCount?: number
+  commentCount?: number
 }
