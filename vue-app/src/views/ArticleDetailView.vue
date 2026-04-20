@@ -1,76 +1,120 @@
 <template>
-  <section class="article-detail">
+  <section class="article-detail page-shell page-shell--wide">
     <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
     <LoadingState v-else-if="isLoading" />
 
-    <article v-else-if="article" class="article-card">
-      <header class="article-header">
-        <div class="header-main">
-          <h1>{{ article.title }}</h1>
-          <p class="meta">
-            by
-            <RouterLink :to="authorProfileLink">{{ authorDisplayName }}</RouterLink>
-            <span>{{ article.publishTime ?? '' }}</span>
-            <span v-if="article.updatedTime">Updated {{ article.updatedTime }}</span>
-          </p>
-          <p v-if="article.summary" class="summary">{{ article.summary }}</p>
-          <div class="taxonomy">
-            <span v-if="article.category" class="taxonomy-item">
-              Category: {{ article.category.name }}
-            </span>
-            <span v-for="tag in article.tags ?? []" :key="tag.id" class="taxonomy-item">
-              #{{ tag.name }}
-            </span>
+    <template v-else-if="article">
+      <article class="article-reading surface-stack">
+        <header class="article-hero hero-surface">
+          <div class="article-hero__main">
+            <div class="page-header article-hero__intro">
+              <span class="page-eyebrow">{{ categoryLabel }}</span>
+              <h1 class="article-title">{{ article.title }}</h1>
+              <p v-if="article.summary" class="article-summary">{{ article.summary }}</p>
+            </div>
+
+            <div class="article-meta panel-card">
+              <div class="article-meta__lead">
+                <p class="article-author">
+                  Written by
+                  <RouterLink :to="authorProfileLink">{{ authorDisplayName }}</RouterLink>
+                </p>
+                <p class="article-meta__dates">
+                  <span v-if="publishLabel">{{ publishLabel }}</span>
+                  <span v-if="article.updatedTime">Updated {{ article.updatedTime }}</span>
+                </p>
+              </div>
+
+              <div class="article-taxonomy">
+                <span v-if="article.category" class="pill ui-pill--category">
+                  {{ article.category.name }}
+                </span>
+                <span v-if="article.wordCount" class="pill ui-pill--status">
+                  {{ article.wordCount }} words
+                </span>
+                <span class="pill ui-pill--status">
+                  {{ isCommentEnabled ? 'Comments open' : 'Comments closed' }}
+                </span>
+                <span
+                  v-for="tag in article.tags ?? []"
+                  :key="tag.id"
+                  class="pill ui-pill--topic"
+                >
+                  #{{ tag.name }}
+                </span>
+              </div>
+            </div>
           </div>
+
+          <aside class="article-hero__aside">
+            <div class="panel-card article-actions">
+              <p class="article-actions__eyebrow page-eyebrow">Manage</p>
+              <p class="article-actions__copy">
+                Keep article actions nearby without pulling focus away from the reading flow.
+              </p>
+              <div class="article-actions__buttons">
+                <RouterLink
+                  v-if="canEditArticlePermission"
+                  class="btn secondary btn-sm"
+                  :to="`/edit-article/${article.id}`"
+                >
+                  Edit Article
+                </RouterLink>
+                <button
+                  v-if="canDeleteArticlePermission"
+                  type="button"
+                  class="danger btn-sm"
+                  :disabled="isDeleting"
+                  @click="handleDeleteArticle"
+                >
+                  {{ isDeleting ? 'Deleting...' : 'Delete Article' }}
+                </button>
+              </div>
+            </div>
+
+            <dl class="article-stats">
+              <div class="stats-tile">
+                <dt>Views</dt>
+                <dd>{{ article.stats?.viewCount ?? 0 }}</dd>
+              </div>
+              <div class="stats-tile">
+                <dt>Likes</dt>
+                <dd>{{ article.stats?.likeCount ?? 0 }}</dd>
+              </div>
+              <div class="stats-tile">
+                <dt>Comments</dt>
+                <dd>{{ article.stats?.commentCount ?? 0 }}</dd>
+              </div>
+              <div class="stats-tile">
+                <dt>Favorites</dt>
+                <dd>{{ article.stats?.favoriteCount ?? 0 }}</dd>
+              </div>
+            </dl>
+          </aside>
+        </header>
+
+        <section class="content-card article-body">
+          <!-- eslint-disable-next-line vue/no-v-html -->
+          <div class="reading-column article-prose" v-html="articleHtml" />
+        </section>
+      </article>
+
+      <section class="panel-card article-comments">
+        <div class="page-header article-comments__header">
+          <span class="page-eyebrow">Discussion</span>
+          <h2>Join the conversation around this piece.</h2>
+          <p>
+            Reader responses stay attached to the article surface, with clear separation from the
+            long-form reading column.
+          </p>
         </div>
 
-        <div class="action-group">
-          <RouterLink
-            v-if="canEditArticlePermission"
-            class="edit-link"
-            :to="`/edit-article/${article.id}`"
-          >
-            Edit Article
-          </RouterLink>
-          <button
-            v-if="canDeleteArticlePermission"
-            type="button"
-            class="delete-btn"
-            :disabled="isDeleting"
-            @click="handleDeleteArticle"
-          >
-            {{ isDeleting ? 'Deleting...' : 'Delete Article' }}
-          </button>
-        </div>
-      </header>
-
-      <dl class="stats-list">
-        <div class="stats-item">
-          <dt>Views</dt>
-          <dd>{{ article.stats?.viewCount ?? 0 }}</dd>
-        </div>
-        <div class="stats-item">
-          <dt>Likes</dt>
-          <dd>{{ article.stats?.likeCount ?? 0 }}</dd>
-        </div>
-        <div class="stats-item">
-          <dt>Comments</dt>
-          <dd>{{ article.stats?.commentCount ?? 0 }}</dd>
-        </div>
-        <div class="stats-item">
-          <dt>Favorites</dt>
-          <dd>{{ article.stats?.favoriteCount ?? 0 }}</dd>
-        </div>
-      </dl>
-
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <div class="content" v-html="articleHtml" />
-    </article>
-
-    <p v-if="article && !isCommentEnabled" class="comment-disabled">
-      Comments are disabled for this article.
-    </p>
-    <CommentList v-else-if="article" :article-id="article.id" />
+        <p v-if="!isCommentEnabled" class="notice-card">
+          Comments are disabled for this article.
+        </p>
+        <CommentList v-else :article-id="article.id" />
+      </section>
+    </template>
   </section>
 </template>
 
@@ -112,6 +156,8 @@ const authorDisplayName = computed(
 )
 const authorProfileLink = computed(() => `/user/${article.value?.author?.id ?? ''}`)
 const isCommentEnabled = computed(() => article.value?.allowComment === 1)
+const categoryLabel = computed(() => article.value?.category?.name || 'Editorial reading')
+const publishLabel = computed(() => article.value?.publishTime || article.value?.createTime || '')
 const canEditArticlePermission = computed(() =>
   canEditArticle(authStore.currentUser, articlePermissionTarget.value as Article | null),
 )
@@ -181,151 +227,240 @@ watch(
 
 <style scoped>
 .article-detail {
+  padding-bottom: var(--space-48);
+}
+
+.article-reading {
+  gap: var(--space-24);
+}
+
+.article-hero {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-24);
+  grid-template-columns: minmax(0, 1.8fr) minmax(260px, 0.95fr);
+  align-items: start;
 }
 
-.article-card {
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
+.article-hero__main,
+.article-hero__aside,
+.article-hero__intro,
+.article-meta,
+.article-actions {
+  display: grid;
+  gap: var(--space-16);
 }
 
-.article-header {
+.article-title {
+  font-size: clamp(2.35rem, 4.6vw, 4rem);
+  line-height: var(--line-tight);
+}
+
+.article-summary {
+  max-width: 40rem;
+  font-size: var(--text-body-lg);
+  color: var(--color-text-soft);
+  line-height: var(--line-body);
+}
+
+.article-meta {
+  padding: var(--space-20);
+}
+
+.article-meta__lead {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.article-author,
+.article-meta__dates {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-8);
 }
 
-.header-main {
-  min-width: 0;
+.article-author {
+  color: var(--color-text-soft);
+  font-size: var(--text-body-sm);
 }
 
-.action-group {
+.article-author a {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.article-meta__dates {
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+}
+
+.article-taxonomy {
   display: flex;
-  gap: 0.55rem;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-8);
 }
 
-h1 {
+.article-actions {
+  align-content: start;
+}
+
+.article-actions__eyebrow {
+  margin: 0;
+}
+
+.article-actions__copy {
+  color: var(--color-muted);
+  font-size: var(--text-body-sm);
+}
+
+.article-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-10);
+}
+
+.article-stats {
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.article-stats dt {
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  line-height: var(--line-meta);
+}
+
+.article-stats dd {
   margin: 0;
   font-family: var(--font-display);
-}
-
-.meta {
-  margin: 0.55rem 0 0;
-  color: var(--color-muted);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.meta a {
-  text-decoration: none;
-  font-weight: 700;
-}
-
-.summary {
-  margin: 0.75rem 0 0;
-  color: var(--color-muted);
-  line-height: 1.6;
-}
-
-.taxonomy {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.taxonomy-item {
-  border-radius: 999px;
-  background: #edf3fb;
-  color: #1f4f92;
-  padding: 0.2rem 0.65rem;
-  font-size: 0.85rem;
-}
-
-.edit-link {
-  text-decoration: none;
-  border-radius: 999px;
-  border: 1px solid var(--color-border-strong);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  line-height: var(--line-tight);
   color: var(--color-text);
-  padding: 0.35rem 0.8rem;
 }
 
-.delete-btn {
-  border: 0;
-  border-radius: 999px;
-  background: #ffebe9;
-  color: #9a2518;
-  padding: 0.4rem 0.85rem;
-  cursor: pointer;
+.article-body {
+  padding-block: clamp(var(--space-24), 4vw, var(--space-40));
 }
 
-.delete-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.article-prose {
+  color: var(--color-text);
+  font-size: var(--text-body-lg);
 }
 
-.stats-list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 1rem 0 0;
+.article-prose :deep(* + *) {
+  margin-top: var(--space-20);
 }
 
-.stats-item {
-  border-radius: 14px;
+.article-prose:deep(h1),
+.article-prose:deep(h2),
+.article-prose:deep(h3),
+.article-prose:deep(h4) {
+  margin-top: var(--space-32);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  line-height: var(--line-heading);
+}
+
+.article-prose:deep(h1) {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.article-prose:deep(h2) {
+  font-size: clamp(1.65rem, 3vw, 2.1rem);
+}
+
+.article-prose:deep(h3) {
+  font-size: 1.35rem;
+}
+
+.article-prose:deep(p),
+.article-prose:deep(li) {
+  color: var(--color-text);
+}
+
+.article-prose:deep(ul),
+.article-prose:deep(ol) {
+  padding-left: 1.4em;
+}
+
+.article-prose:deep(blockquote) {
+  border-left: 3px solid var(--color-accent-soft);
+  padding: var(--space-12) 0 var(--space-12) var(--space-16);
+  color: var(--color-text-soft);
+  background: linear-gradient(90deg, rgba(234, 216, 203, 0.3) 0%, rgba(234, 216, 203, 0) 100%);
+}
+
+.article-prose:deep(pre) {
+  overflow-x: auto;
+  padding: var(--space-16);
   border: 1px solid var(--color-border);
-  background: #f8fafc;
-  padding: 0.75rem;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface-soft) 82%, white);
 }
 
-.stats-item dt {
-  color: var(--color-muted);
-  font-size: 0.85rem;
+.article-prose:deep(img) {
+  border-radius: var(--radius-lg);
+  margin-inline: auto;
+  box-shadow: var(--shadow-soft);
 }
 
-.stats-item dd {
-  margin: 0.35rem 0 0;
-  font-size: 1.2rem;
-  font-weight: 700;
+.article-prose:deep(hr) {
+  margin-block: var(--space-32);
 }
 
-.content {
-  margin-top: 1rem;
-  line-height: 1.7;
+.article-comments {
+  gap: var(--space-20);
 }
 
-.comment-disabled {
-  margin: 0;
-  border-radius: 12px;
-  border: 1px solid #d7e3f3;
-  background: #f7fbff;
-  color: #1f4f92;
-  padding: 0.75rem 1rem;
+.article-comments__header {
+  max-width: 42rem;
 }
 
-.error-text {
-  margin: 0;
-  color: #b42318;
-  border: 1px solid #f6d0ce;
-  border-radius: 12px;
-  background: #fff2f2;
-  padding: 0.75rem;
+.article-comments :deep(.comment-section) {
+  margin-top: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.article-comments :deep(.comment-list) {
+  gap: var(--space-12);
+}
+
+.article-comments :deep(.sentinel) {
+  margin-top: var(--space-8);
 }
 
 @media (max-width: 768px) {
-  .article-header {
-    flex-direction: column;
+  .article-detail {
+    padding-bottom: var(--space-32);
   }
 
-  .stats-list {
+  .article-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .article-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .article-title {
+    font-size: clamp(2rem, 11vw, 3rem);
+  }
+}
+
+@media (max-width: 560px) {
+  .article-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .article-actions__buttons {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 </style>

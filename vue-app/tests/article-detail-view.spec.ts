@@ -61,6 +61,7 @@ describe('ArticleDetailView', () => {
       summary: 'summary',
       publishTime: '2026-03-20',
       updatedTime: '2026-03-21',
+      wordCount: 1280,
       allowComment: 1,
       author: { id: 1, username: 'author', nickname: 'Author' },
       category: { id: 1, name: 'Frontend', slug: 'frontend' },
@@ -82,6 +83,9 @@ describe('ArticleDetailView', () => {
 
     expect(getArticleDetailMock).toHaveBeenCalledWith('101')
     expect(wrapper.text()).toContain('Vue Article')
+    expect(wrapper.text()).toContain('Comments open')
+    expect(wrapper.text()).toContain('1280 words')
+    expect(wrapper.find('.hero-surface').exists()).toBe(true)
     expect(wrapper.find('[data-testid="comment-list"]').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('Comments are disabled')
   })
