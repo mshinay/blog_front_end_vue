@@ -1,36 +1,141 @@
 <template>
   <header class="app-header">
-    <div class="header-inner">
-      <RouterLink class="brand" to="/main">Blog Front End</RouterLink>
+    <div class="app-header__inner">
+      <div class="app-header__frame">
+        <div class="app-header__bar">
+          <RouterLink class="brand" to="/main" @click="closeMenu">
+            <span class="brand__mark" aria-hidden="true">BF</span>
+            <span class="brand__copy">
+              <span class="page-eyebrow brand__eyebrow">Editorial Tech</span>
+              <span class="brand__title">Blog Front End</span>
+            </span>
+          </RouterLink>
 
-      <nav class="nav-links">
-        <RouterLink to="/main">Home</RouterLink>
-        <RouterLink to="/search">Search</RouterLink>
-        <RouterLink to="/upload">Write</RouterLink>
-        <RouterLink to="/person">Profile</RouterLink>
-        <RouterLink v-if="authStore.isAdmin" to="/admin/articles">Admin Articles</RouterLink>
-        <RouterLink v-if="authStore.isAdmin" to="/admin/comments">Admin Comments</RouterLink>
-      </nav>
+          <button
+            class="app-header__menu-toggle secondary btn-sm"
+            type="button"
+            :aria-expanded="isMenuOpen"
+            aria-controls="global-nav-panel"
+            @click="toggleMenu"
+          >
+            <span class="app-header__menu-label">Menu</span>
+            <span class="app-header__menu-icon" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+          </button>
+        </div>
 
-      <div class="auth-actions">
-        <span v-if="authStore.isAuthenticated" class="welcome">Hi, {{ authStore.currentUser?.username }}</span>
-        <RouterLink v-if="!authStore.isAuthenticated" class="btn ghost" to="/login">Log in</RouterLink>
-        <RouterLink v-if="!authStore.isAuthenticated" class="btn" to="/register">Sign up</RouterLink>
-        <button v-else class="btn" type="button" @click="handleLogout">Log out</button>
+        <div id="global-nav-panel" class="app-header__panel" :class="{ 'is-open': isMenuOpen }">
+          <nav class="primary-nav" aria-label="Primary navigation">
+            <RouterLink
+              v-for="item in primaryNavItems"
+              :key="item.to"
+              class="primary-nav__link"
+              :to="item.to"
+              @click="closeMenu"
+            >
+              <span class="primary-nav__label">{{ item.label }}</span>
+              <span class="primary-nav__hint">{{ item.hint }}</span>
+            </RouterLink>
+          </nav>
+
+          <div v-if="authStore.isAdmin" class="admin-nav">
+            <span class="admin-nav__label">Admin</span>
+            <div class="admin-nav__links">
+              <RouterLink
+                v-for="item in adminNavItems"
+                :key="item.to"
+                class="admin-nav__link"
+                :to="item.to"
+                @click="closeMenu"
+              >
+                {{ item.label }}
+              </RouterLink>
+            </div>
+          </div>
+
+          <div class="auth-actions">
+            <div v-if="authStore.isAuthenticated" class="auth-actions__identity">
+              <span class="auth-actions__eyebrow">Signed in</span>
+              <span class="auth-actions__name">{{ authStore.currentUser?.username }}</span>
+            </div>
+
+            <div class="auth-actions__buttons">
+              <RouterLink
+                v-if="!authStore.isAuthenticated"
+                class="btn ghost btn-sm"
+                to="/login"
+                @click="closeMenu"
+              >
+                Log in
+              </RouterLink>
+              <RouterLink
+                v-if="!authStore.isAuthenticated"
+                class="btn btn-sm"
+                to="/register"
+                @click="closeMenu"
+              >
+                Sign up
+              </RouterLink>
+              <button v-else class="btn secondary btn-sm" type="button" @click="handleLogout">
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
+type NavItem = {
+  label: string
+  hint: string
+  to: string
+}
+
+const primaryNavItems: NavItem[] = [
+  { label: 'Home', hint: 'Latest writing', to: '/main' },
+  { label: 'Search', hint: 'Find stories fast', to: '/search' },
+  { label: 'Write', hint: 'Publish a post', to: '/upload' },
+  { label: 'Profile', hint: 'Your author space', to: '/person' },
+]
+
+const adminNavItems: NavItem[] = [
+  { label: 'Articles', hint: 'Moderate posts', to: '/admin/articles' },
+  { label: 'Comments', hint: 'Review discussion', to: '/admin/comments' },
+]
+
+const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const isMenuOpen = ref(false)
+
+watch(
+  () => route.fullPath,
+  () => {
+    closeMenu()
+  },
+)
+
+function toggleMenu(): void {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+function closeMenu(): void {
+  isMenuOpen.value = false
+}
 
 function handleLogout(): void {
+  closeMenu()
   authStore.logout()
   router.push({ name: 'login' })
 }
@@ -40,83 +145,334 @@ function handleLogout(): void {
 .app-header {
   position: sticky;
   top: 0;
-  z-index: 20;
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  z-index: 30;
+  padding: var(--space-12) var(--layout-shell-padding) 0;
 }
 
-.header-inner {
-  max-width: 1100px;
+.app-header__inner {
+  width: min(100%, var(--layout-page-max));
   margin: 0 auto;
-  min-height: 64px;
+}
+
+.app-header__frame {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--color-border-strong) 72%, white);
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(180deg, rgba(251, 248, 242, 0.95) 0%, rgba(246, 241, 232, 0.9) 100%);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(16px);
+}
+
+.app-header__bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0 1rem;
+  gap: var(--space-16);
+  padding: var(--space-12) var(--space-16);
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-12);
+  min-width: 0;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.brand:hover {
+  color: var(--color-text);
+}
+
+.brand__mark {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--color-border-strong) 75%, white);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-accent-soft) 82%, white) 0%, var(--color-surface) 100%);
+  color: var(--color-accent-strong);
   font-family: var(--font-display);
   font-size: 1.1rem;
-  text-decoration: none;
-  color: var(--color-text);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+.brand__copy {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
 }
 
-.nav-links a {
-  text-decoration: none;
+.brand__eyebrow {
   color: var(--color-muted);
-  font-weight: 600;
 }
 
-.nav-links a.router-link-active {
+.brand__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 1.8vw, 1.45rem);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--line-tight);
+}
+
+.app-header__menu-toggle {
+  display: none;
+  flex: 0 0 auto;
+}
+
+.app-header__menu-label {
+  font-size: var(--text-meta);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.app-header__menu-icon {
+  display: inline-grid;
+  gap: 4px;
+}
+
+.app-header__menu-icon span {
+  width: 16px;
+  height: 1.5px;
+  border-radius: var(--radius-pill);
+  background: currentColor;
+}
+
+.app-header__panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) auto auto;
+  align-items: center;
+  gap: var(--space-16);
+  padding: 0 var(--space-16) var(--space-12);
+  border-top: 1px solid var(--color-divider);
+}
+
+.primary-nav {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-8);
+  min-width: 0;
+}
+
+.primary-nav__link {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-10) var(--space-12);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text-soft);
+  text-decoration: none;
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
+}
+
+.primary-nav__link:hover {
+  transform: translateY(-1px);
+  border-color: var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 90%, white);
   color: var(--color-text);
+}
+
+.primary-nav__link.router-link-active {
+  border-color: color-mix(in srgb, var(--color-border-strong) 78%, white);
+  background: linear-gradient(180deg, rgba(251, 248, 242, 0.92) 0%, rgba(234, 216, 203, 0.72) 100%);
+  color: var(--color-text);
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+}
+
+.primary-nav__label {
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.primary-nav__hint {
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  line-height: var(--line-meta);
+  white-space: nowrap;
+}
+
+.admin-nav {
+  display: grid;
+  gap: var(--space-8);
+  justify-items: end;
+}
+
+.admin-nav__label {
+  color: var(--color-muted-soft);
+  font-size: var(--text-meta);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  line-height: var(--line-meta);
+  text-transform: uppercase;
+}
+
+.admin-nav__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-8);
+}
+
+.admin-nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height-sm);
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-surface) 84%, white);
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.admin-nav__link:hover,
+.admin-nav__link.router-link-active {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-soft);
+  color: var(--color-text-soft);
 }
 
 .auth-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: flex-end;
+  gap: var(--space-12);
 }
 
-.welcome {
-  color: var(--color-muted);
-  font-size: 0.9rem;
+.auth-actions__identity {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  text-align: right;
 }
 
-.btn {
-  border: 1px solid var(--color-border-strong);
-  border-radius: 999px;
-  background: var(--color-text);
-  color: var(--color-surface);
-  padding: 0.4rem 0.8rem;
-  text-decoration: none;
-  cursor: pointer;
+.auth-actions__eyebrow {
+  color: var(--color-muted-soft);
+  font-size: var(--text-meta);
+  line-height: var(--line-meta);
 }
 
-.btn.ghost {
-  background: transparent;
+.auth-actions__name {
   color: var(--color-text);
+  font-size: var(--text-body-sm);
+  font-weight: 700;
+  line-height: 1.25;
 }
 
-@media (max-width: 900px) {
-  .header-inner {
-    flex-wrap: wrap;
-    min-height: auto;
-    padding: 0.75rem;
+.auth-actions__buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+@media (max-width: 1120px) {
+  .app-header__panel {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: stretch;
   }
 
-  .nav-links {
-    order: 3;
+  .admin-nav,
+  .auth-actions,
+  .auth-actions__identity {
+    justify-items: start;
+    justify-content: flex-start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: var(--space-10) var(--layout-shell-padding-mobile) 0;
+  }
+
+  .app-header__bar {
+    padding: var(--space-12);
+  }
+
+  .app-header__menu-toggle {
+    display: inline-flex;
+  }
+
+  .app-header__panel {
+    position: absolute;
+    top: calc(100% + var(--space-8));
+    left: 0;
+    right: 0;
+    z-index: 10;
+    grid-template-columns: 1fr;
+    gap: var(--space-16);
+    padding: var(--space-16);
+    border: 1px solid color-mix(in srgb, var(--color-border-strong) 72%, white);
+    border-radius: var(--radius-xl);
+    background:
+      linear-gradient(180deg, rgba(251, 248, 242, 0.98) 0%, rgba(246, 241, 232, 0.98) 100%);
+    box-shadow: var(--shadow-medium);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-0.5rem);
+    pointer-events: none;
+    transition:
+      opacity var(--motion-base) var(--ease-standard),
+      transform var(--motion-base) var(--ease-standard),
+      visibility var(--motion-base) var(--ease-standard);
+  }
+
+  .app-header__panel.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .primary-nav {
+    display: grid;
+    gap: var(--space-10);
+  }
+
+  .primary-nav__link,
+  .primary-nav__hint,
+  .admin-nav,
+  .admin-nav__links,
+  .auth-actions,
+  .auth-actions__buttons {
     width: 100%;
-    justify-content: space-between;
+  }
+
+  .primary-nav__hint {
+    white-space: normal;
+  }
+
+  .admin-nav {
+    justify-items: start;
+  }
+
+  .admin-nav__links,
+  .auth-actions__buttons {
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .auth-actions {
+    align-items: stretch;
+  }
+
+  .auth-actions__buttons > * {
+    width: 100%;
   }
 }
 </style>
