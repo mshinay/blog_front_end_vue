@@ -1,30 +1,89 @@
 <template>
-  <section class="auth-page">
-    <form class="auth-card" @submit.prevent="handleSubmit">
-      <p class="eyebrow">Welcome Back</p>
-      <h1>Log in to continue</h1>
+  <section class="page-shell page-shell--wide auth-page">
+    <div class="auth-stage">
+      <aside class="hero-surface auth-story">
+        <p class="page-eyebrow">Reader Access</p>
+        <div class="auth-story__header">
+          <h1>Return to your reading desk.</h1>
+          <p>
+            Pick up drafts, saved thoughts, and your latest conversations inside a calmer,
+            more intentional blog workspace.
+          </p>
+        </div>
 
-      <label>
-        Username
-        <input v-model.trim="form.username" type="text" autocomplete="username" required />
-      </label>
+        <div class="auth-story__stats">
+          <article class="stats-tile">
+            <span class="auth-story__label">Made For</span>
+            <strong>Long-form reading</strong>
+            <p>Structured pages, calmer surfaces, and a sharper editorial rhythm across the app.</p>
+          </article>
+          <article class="stats-tile">
+            <span class="auth-story__label">Keeps</span>
+            <strong>Your place</strong>
+            <p>Jump back into search, article detail, and your author space without losing momentum.</p>
+          </article>
+        </div>
 
-      <label>
-        Password
-        <input v-model="form.password" type="password" autocomplete="current-password" required />
-      </label>
+        <div class="panel-card auth-story__note">
+          <p class="page-eyebrow">What Awaits</p>
+          <ul class="auth-story__list">
+            <li>Revisit current writing threads and personal discussion history.</li>
+            <li>Manage your profile, drafts, and publishing flow from one authored workspace.</li>
+            <li>Stay in the same editorial system across homepage, reading pages, and search.</li>
+          </ul>
+        </div>
+      </aside>
 
-      <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+      <form class="panel-card auth-panel" @submit.prevent="handleSubmit">
+        <div class="page-header auth-panel__header">
+          <p class="page-eyebrow">Welcome Back</p>
+          <h2>Log in to continue</h2>
+          <p>Use your existing account to return to articles, comments, and your author tools.</p>
+        </div>
 
-      <button :disabled="authStore.isLoading" type="submit" class="submit-btn">
-        {{ authStore.isLoading ? 'Logging in...' : 'Log in' }}
-      </button>
+        <div class="auth-panel__fields">
+          <label class="auth-field" for="login-username">
+            <span>Username</span>
+            <input
+              id="login-username"
+              v-model.trim="form.username"
+              class="ui-input"
+              type="text"
+              autocomplete="username"
+              placeholder="Enter your username"
+              required
+            />
+          </label>
 
-      <p class="hint">
-        New here?
-        <RouterLink to="/register">Create an account</RouterLink>
-      </p>
-    </form>
+          <label class="auth-field" for="login-password">
+            <span>Password</span>
+            <input
+              id="login-password"
+              v-model="form.password"
+              class="ui-input"
+              type="password"
+              autocomplete="current-password"
+              placeholder="Enter your password"
+              required
+            />
+          </label>
+        </div>
+
+        <p class="auth-panel__meta">
+          Logging in keeps your current reading path and redirects you back when a protected page
+          asked for auth first.
+        </p>
+
+        <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+
+        <div class="auth-panel__actions">
+          <button :disabled="authStore.isLoading" type="submit" class="btn-lg">
+            {{ authStore.isLoading ? 'Logging in...' : 'Log in' }}
+          </button>
+          <RouterLink class="btn secondary btn-lg" to="/register">Create an account</RouterLink>
+        </div>
+      </form>
+    </div>
   </section>
 </template>
 
@@ -74,73 +133,123 @@ async function handleSubmit(): Promise<void> {
 
 <style scoped>
 .auth-page {
-  min-height: calc(100vh - 150px);
+  min-height: calc(100vh - 11rem);
+  align-content: center;
+  padding-block: clamp(var(--space-24), 5vw, var(--space-48));
+}
+
+.auth-stage {
   display: grid;
-  place-items: center;
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: var(--space-24);
+  align-items: stretch;
 }
 
-.auth-card {
-  width: min(420px, 100%);
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.auth-story,
+.auth-panel {
+  display: grid;
+  gap: var(--space-24);
 }
 
-.eyebrow {
-  margin: 0;
+.auth-story__header {
+  display: grid;
+  gap: var(--space-12);
+  max-width: 34rem;
+}
+
+.auth-story__header h1 {
+  font-size: var(--text-display);
+}
+
+.auth-story__header p {
+  font-size: var(--text-body-lg);
   color: var(--color-muted);
+}
+
+.auth-story__stats {
+  display: grid;
+  gap: var(--space-16);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.auth-story__label {
+  color: var(--color-text-soft);
+  font-size: var(--text-meta);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.75rem;
 }
 
-h1 {
-  margin: 0;
-  font-family: var(--font-display);
+.auth-story__note {
+  gap: var(--space-12);
+  align-content: start;
 }
 
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
+.auth-story__list {
+  display: grid;
+  gap: var(--space-10);
+  padding-left: 1.2rem;
+  color: var(--color-text-soft);
+}
+
+.auth-panel {
+  align-content: start;
+  padding: clamp(var(--space-24), 3vw, var(--space-32));
+  background:
+    linear-gradient(180deg, rgba(251, 248, 242, 0.97) 0%, rgba(246, 241, 232, 0.98) 100%),
+    var(--color-surface);
+}
+
+.auth-panel__header {
+  max-width: none;
+}
+
+.auth-panel__fields {
+  display: grid;
+  gap: var(--space-16);
+}
+
+.auth-field {
+  display: grid;
+  gap: var(--space-8);
+  color: var(--color-text-soft);
+  font-size: var(--text-body-sm);
   font-weight: 600;
 }
 
-input {
-  padding: 0.65rem 0.75rem;
-  border-radius: 10px;
-  border: 1px solid var(--color-border-strong);
-}
-
-.submit-btn {
-  border: 0;
-  border-radius: 12px;
-  padding: 0.7rem 1rem;
-  background: var(--color-text);
-  color: var(--color-surface);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.submit-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.error-text {
-  margin: 0;
-  color: #b42318;
-  font-size: 0.9rem;
-}
-
-.hint {
-  margin: 0;
+.auth-panel__meta {
   color: var(--color-muted);
-  font-size: 0.9rem;
+  font-size: var(--text-body-sm);
+}
+
+.auth-panel__actions {
+  display: grid;
+  gap: var(--space-12);
+}
+
+.auth-panel__actions > * {
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .auth-stage {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-story__stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-page {
+    min-height: auto;
+    padding-block: var(--space-8) var(--space-24);
+  }
+
+  .auth-story,
+  .auth-panel {
+    gap: var(--space-20);
+  }
 }
 </style>
