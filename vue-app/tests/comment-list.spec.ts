@@ -3,6 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
 import { useAuthStore } from '@/stores/auth'
+import { AppError } from '@/api/client'
 
 const {
   getCommentListMock,
@@ -30,10 +31,33 @@ vi.mock('@/api/modules/comment', () => {
 import CommentList from '@/components/comment/CommentList.vue'
 
 describe('CommentList', () => {
+  let observers: Array<{
+    active: boolean
+    callback: (entries: Array<{ isIntersecting: boolean }>) => void
+  }>
+
   beforeEach(() => {
+    observers = []
+
     globalThis.IntersectionObserver = class {
+      observerState: {
+        active: boolean
+        callback: (entries: Array<{ isIntersecting: boolean }>) => void
+      }
+
+      constructor(callback: (entries: Array<{ isIntersecting: boolean }>) => void) {
+        this.observerState = {
+          active: true,
+          callback,
+        }
+        observers.push(this.observerState)
+      }
+
       observe() {}
-      disconnect() {}
+
+      disconnect() {
+        this.observerState.active = false
+      }
     } as typeof IntersectionObserver
 
     setActivePinia(createPinia())
@@ -53,6 +77,12 @@ describe('CommentList', () => {
     updateCommentMock.mockReset()
     deleteCommentMock.mockReset()
   })
+
+  function triggerIntersection(): void {
+    observers
+      .filter((observer) => observer.active)
+      .forEach((observer) => observer.callback([{ isIntersecting: true }]))
+  }
 
   it('loads comments and posts new comment through standard payload', async () => {
     getCommentListMock
@@ -170,5 +200,60 @@ describe('CommentList', () => {
 
     expect(deleteCommentMock).toHaveBeenCalledWith(1)
     expect(wrapper.findAll('[data-testid="comment-item"]')).toHaveLength(0)
+  })
+
+  it('stops auto retry after load failure until the user retries explicitly', async () => {
+    getCommentListMock
+      .mockRejectedValueOnce(new AppError('Failed to load comments.'))
+      .mockResolvedValueOnce({
+        records: [
+          {
+            comment: { id: 1, articleId: 101, userId: 2, userName: 'demo', content: 'recovered' },
+            children: [],
+          },
+        ],
+      })
+
+    const wrapper = mount(CommentList, {
+      props: { articleId: 101 },
+      global: {
+        stubs: {
+          CommentEditor: { template: '<div />' },
+          CommentItem: {
+            props: [
+              'comment',
+              'children',
+              'canEdit',
+              'canDelete',
+              'isSaving',
+              'isDeleting',
+              'resolveCanEdit',
+              'resolveCanDelete',
+              'activeSavingId',
+              'activeDeletingId',
+            ],
+            template: '<li data-testid="comment-item">{{ comment.content }}</li>',
+          },
+          EmptyState: { template: '<div data-testid="empty" />' },
+          LoadingState: { template: '<div data-testid="loading" />' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(getCommentListMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('Failed to load comments.')
+
+    triggerIntersection()
+    await flushPromises()
+
+    expect(getCommentListMock).toHaveBeenCalledTimes(1)
+
+    await wrapper.get('.retry-btn').trigger('click')
+    await flushPromises()
+
+    expect(getCommentListMock).toHaveBeenCalledTimes(2)
+    expect(wrapper.text()).toContain('recovered')
   })
 })

@@ -271,7 +271,7 @@ function compactNumber(value: number): string {
 }
 
 .article-card__stat strong {
-  font-size: 1rem;
+  font-size: var(--text-body);
   line-height: 1;
   color: var(--color-text);
 }
@@ -332,7 +332,7 @@ function compactNumber(value: number): string {
 }
 
 .article-card--compact .article-card__title {
-  font-size: 1.08rem;
+  font-size: var(--text-body-lg);
 }
 
 .article-card--compact .article-card__summary {

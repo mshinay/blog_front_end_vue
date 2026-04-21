@@ -1,8 +1,12 @@
 <template>
-  <section class="comment-section">
-    <header>
-      <h2>Comments</h2>
-      <p>{{ loadedCount }} loaded</p>
+  <section class="comment-section panel-card" :class="{ 'comment-section--embedded': embedded }">
+    <header v-if="!embedded" class="comment-section__header">
+      <div class="page-header">
+        <p class="page-eyebrow">Discussion</p>
+        <h2>Comments</h2>
+        <p>Share focused feedback, ask follow-ups, and keep replies readable across nested threads.</p>
+      </div>
+      <span class="ui-pill ui-pill--status">{{ loadedCount }} loaded</span>
     </header>
 
     <CommentEditor
@@ -12,10 +16,11 @@
       :loading="isCreating"
       :reset-key="editorResetKey"
       placeholder="Write your comment in Markdown..."
+      label="New comment"
       @submit="createNewComment"
     />
 
-    <p v-else class="hint">Log in to post comments.</p>
+    <p v-else class="notice-card">Log in to post comments.</p>
 
     <ul v-if="comments.length > 0" class="comment-list">
       <CommentItem
@@ -38,17 +43,21 @@
 
     <EmptyState
       v-else-if="!isLoading && !errorMessage"
-      message="No comments yet. Start the discussion."
+      eyebrow="Start Discussion"
+      title="No comments yet."
+      message="Be the first to leave a thoughtful note on this article."
     />
 
     <p v-if="errorMessage" class="error-text">
       {{ errorMessage }}
-      <button type="button" class="retry-btn" @click="loadMoreComments">Retry</button>
+      <button v-if="hasLoadError" type="button" class="retry-btn secondary btn-sm" @click="retryLoadMoreComments">
+        Retry
+      </button>
     </p>
 
     <LoadingState v-if="isLoading" />
 
-    <p v-if="allLoaded && comments.length > 0" class="end-text">No more comments.</p>
+    <p v-if="allLoaded && comments.length > 0" class="muted-text comment-section__end">No more comments.</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
@@ -67,9 +76,15 @@ import { useAuthStore } from '@/stores/auth'
 import type { CommentItem as CommentModel, CommentNode } from '@/types/comment'
 import { canDeleteComment, canEditComment } from '@/utils/permissions'
 
-const props = defineProps<{
-  articleId: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    articleId: number
+    embedded?: boolean
+  }>(),
+  {
+    embedded: false,
+  },
+)
 
 const authStore = useAuthStore()
 
@@ -79,13 +94,14 @@ const pageSize = 10
 const isLoading = ref(false)
 const allLoaded = ref(false)
 const errorMessage = ref('')
+const hasLoadError = ref(false)
 const sentinelRef = ref<HTMLElement | null>(null)
 const isCreating = ref(false)
 const updatingId = ref<number | null>(null)
 const deletingId = ref<number | null>(null)
 const editorResetKey = ref(0)
 
-const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
+const observerEnabled = computed(() => !isLoading.value && !allLoaded.value && !hasLoadError.value)
 const loadedCount = computed(() =>
   comments.value.reduce((count, node) => count + 1 + node.children.length, 0),
 )
@@ -95,6 +111,17 @@ function resetState(): void {
   page.value = 1
   allLoaded.value = false
   errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function clearLoadError(): void {
+  errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function retryLoadMoreComments(): void {
+  clearLoadError()
+  void loadMoreComments()
 }
 
 function canCurrentUserEdit(comment: CommentModel): boolean {
@@ -106,12 +133,12 @@ function canCurrentUserDelete(comment: CommentModel): boolean {
 }
 
 async function loadMoreComments(): Promise<void> {
-  if (isLoading.value || allLoaded.value) {
+  if (isLoading.value || allLoaded.value || hasLoadError.value) {
     return
   }
 
   isLoading.value = true
-  errorMessage.value = ''
+  clearLoadError()
 
   try {
     const pageResult = await getCommentList(props.articleId, page.value, pageSize)
@@ -132,6 +159,7 @@ async function loadMoreComments(): Promise<void> {
     )
     page.value += 1
   } catch (error) {
+    hasLoadError.value = true
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
@@ -245,32 +273,26 @@ useInfiniteScroll(sentinelRef, loadMoreComments, {
 
 <style scoped>
 .comment-section {
-  margin-top: 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
-  display: grid;
-  gap: 0.8rem;
+  gap: var(--space-20);
 }
 
-header {
+.comment-section--embedded {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.comment-section__header {
   display: flex;
-  align-items: baseline;
+  align-items: start;
   justify-content: space-between;
-  gap: 0.8rem;
+  gap: var(--space-16);
 }
 
-h2,
-p {
-  margin: 0;
-}
-
-header p,
-.hint,
-.end-text {
-  color: var(--color-muted);
+.comment-section__header .page-header {
+  max-width: 44rem;
 }
 
 .comment-list {
@@ -278,29 +300,24 @@ header p,
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 0.7rem;
-}
-
-.error-text {
-  margin: 0;
-  color: #b42318;
-  border: 1px solid #f6d0ce;
-  border-radius: 12px;
-  background: #fff2f2;
-  padding: 0.75rem;
+  gap: var(--space-16);
 }
 
 .retry-btn {
-  margin-left: 0.75rem;
-  border: 0;
-  border-radius: 8px;
-  background: var(--color-text);
-  color: var(--color-surface);
-  padding: 0.35rem 0.7rem;
-  cursor: pointer;
+  margin-left: var(--space-10);
+}
+
+.comment-section__end {
+  text-align: center;
 }
 
 .sentinel {
   height: 1px;
+}
+
+@media (max-width: 768px) {
+  .comment-section__header {
+    display: grid;
+  }
 }
 </style>

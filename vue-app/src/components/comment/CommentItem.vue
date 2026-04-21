@@ -1,11 +1,11 @@
 <template>
-  <li class="comment-item">
-    <div class="head">
-      <RouterLink :to="`/user/${comment.userId}`">@{{ displayName }}</RouterLink>
-      <span>{{ displayTime }}</span>
+  <li class="comment-item content-card">
+    <div class="comment-item__head">
+      <RouterLink class="comment-item__author" :to="`/user/${comment.userId}`">@{{ displayName }}</RouterLink>
+      <span class="comment-item__time">{{ displayTime }}</span>
     </div>
 
-    <div v-if="isEditing">
+    <div v-if="isEditing" class="comment-item__editor">
       <CommentEditor
         :model-value="editDraft"
         submit-text="Save"
@@ -17,19 +17,25 @@
       />
     </div>
 
-    <div v-else>
-      <p v-if="replyLabel" class="reply-label">{{ replyLabel }}</p>
+    <div v-else class="comment-item__body">
+      <p v-if="replyLabel" class="comment-item__reply">{{ replyLabel }}</p>
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div class="content" v-html="renderedHtml" />
-      <div v-if="canEdit || canDelete" class="actions">
-        <button v-if="canEdit" type="button" class="ghost" @click="startEdit">Edit</button>
-        <button v-if="canDelete" type="button" class="danger" :disabled="isDeleting" @click="emit('delete', comment.id)">
+      <div class="comment-item__content" v-html="renderedHtml" />
+      <div v-if="canEdit || canDelete" class="comment-item__actions">
+        <button v-if="canEdit" type="button" class="secondary" @click="startEdit">Edit</button>
+        <button
+          v-if="canDelete"
+          type="button"
+          class="danger"
+          :disabled="isDeleting"
+          @click="emit('delete', comment.id)"
+        >
           {{ isDeleting ? 'Deleting...' : 'Delete' }}
         </button>
       </div>
     </div>
 
-    <ul v-if="children.length > 0" class="child-list">
+    <ul v-if="children.length > 0" class="comment-item__children">
       <CommentItem
         v-for="child in children"
         :key="child.id"
@@ -53,9 +59,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import CommentEditor from '@/components/comment/CommentEditor.vue'
-import { renderMarkdown } from '@/utils/markdown'
 import type { CommentItem as CommentModel } from '@/types/comment'
+import { renderMarkdown } from '@/utils/markdown'
+import CommentEditor from '@/components/comment/CommentEditor.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -141,71 +147,70 @@ function cancelEdit(): void {
 </script>
 
 <style scoped>
-.comment-item {
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background: var(--color-surface);
-  padding: 0.85rem;
-  display: grid;
-  gap: 0.7rem;
+.comment-item,
+.comment-item__body,
+.comment-item__editor {
+  gap: var(--space-12);
 }
 
-.head {
+.comment-item__head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 0.8rem;
-  font-size: 0.9rem;
-  color: var(--color-muted);
+  gap: var(--space-12);
+  padding-bottom: var(--space-10);
+  border-bottom: 1px solid var(--color-divider);
 }
 
-.head a {
+.comment-item__author {
   text-decoration: none;
   font-weight: 700;
 }
 
-.content {
-  line-height: 1.6;
-}
-
-.reply-label {
-  margin: 0;
+.comment-item__time {
   color: var(--color-muted);
-  font-size: 0.88rem;
+  font-size: var(--text-meta);
 }
 
-.actions {
+.comment-item__reply {
+  color: var(--color-text-soft);
+  font-size: var(--text-meta);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.comment-item__content {
+  line-height: var(--line-reading);
+  color: var(--color-text);
+}
+
+.comment-item__actions {
   display: flex;
-  gap: 0.55rem;
+  align-items: center;
+  gap: var(--space-10);
+  padding-top: var(--space-8);
 }
 
-.child-list {
+.comment-item__children {
   list-style: none;
   margin: 0;
-  padding: 0 0 0 1rem;
+  padding: var(--space-16) 0 0 var(--space-16);
   display: grid;
-  gap: 0.7rem;
-  border-left: 2px solid var(--color-border);
+  gap: var(--space-12);
+  border-left: 2px solid color-mix(in srgb, var(--color-border) 78%, white);
 }
 
-button {
-  border: 0;
-  border-radius: 8px;
-  padding: 0.35rem 0.7rem;
-  cursor: pointer;
-}
+@media (max-width: 640px) {
+  .comment-item__actions {
+    display: grid;
+  }
 
-button.ghost {
-  background: #edf3fb;
-  color: #1f4f92;
-}
+  .comment-item__actions > * {
+    width: 100%;
+  }
 
-button.danger {
-  background: #ffebe9;
-  color: #9a2518;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  .comment-item__children {
+    padding-left: var(--space-12);
+  }
 }
 </style>

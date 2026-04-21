@@ -329,7 +329,7 @@ function handleLogout(): void {
   display: inline-flex;
   align-items: center;
   min-height: var(--control-height-sm);
-  padding: 0.5rem 0.8rem;
+  padding: var(--space-8) var(--space-12);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-surface) 84%, white);

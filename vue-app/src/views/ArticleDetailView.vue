@@ -112,7 +112,7 @@
         <p v-if="!isCommentEnabled" class="notice-card">
           Comments are disabled for this article.
         </p>
-        <CommentList v-else :article-id="article.id" />
+        <CommentList v-else :article-id="article.id" embedded />
       </section>
     </template>
   </section>
@@ -416,15 +416,6 @@ watch(
 
 .article-comments__header {
   max-width: 42rem;
-}
-
-.article-comments :deep(.comment-section) {
-  margin-top: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0;
 }
 
 .article-comments :deep(.comment-list) {
