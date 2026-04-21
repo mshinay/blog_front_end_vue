@@ -6,13 +6,16 @@
       <span />
       <span />
     </div>
-    <h2>{{ title }}</h2>
-    <p>{{ message }}</p>
+    <h2>{{ resolvedTitle }}</h2>
+    <p>{{ resolvedMessage }}</p>
   </section>
 </template>
 
 <script setup lang="ts">
-withDefaults(
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const props = withDefaults(
   defineProps<{
     eyebrow?: string
     title?: string
@@ -21,11 +24,16 @@ withDefaults(
   }>(),
   {
     eyebrow: '',
-    title: 'Loading...',
-    message: 'Please wait while the next surface is prepared.',
+    title: '',
+    message: '',
     compact: false,
   },
 )
+
+const { t } = useI18n()
+
+const resolvedTitle = computed(() => props.title || t('states.loadingTitle'))
+const resolvedMessage = computed(() => props.message || t('states.loadingMessage'))
 </script>
 
 <style scoped>

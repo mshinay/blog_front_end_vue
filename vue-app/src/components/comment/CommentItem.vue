@@ -8,8 +8,8 @@
     <div v-if="isEditing" class="comment-item__editor">
       <CommentEditor
         :model-value="editDraft"
-        submit-text="Save"
-        loading-text="Saving..."
+        :submit-text="t('commentItem.editor.save')"
+        :loading-text="t('commentItem.editor.saving')"
         :loading="isSaving"
         :show-cancel="true"
         @submit="emit('update', { id: comment.id, content: $event })"
@@ -22,7 +22,7 @@
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="comment-item__content" v-html="renderedHtml" />
       <div v-if="canEdit || canDelete" class="comment-item__actions">
-        <button v-if="canEdit" type="button" class="secondary" @click="startEdit">Edit</button>
+        <button v-if="canEdit" type="button" class="secondary" @click="startEdit">{{ t('commentItem.actions.edit') }}</button>
         <button
           v-if="canDelete"
           type="button"
@@ -30,7 +30,7 @@
           :disabled="isDeleting"
           @click="emit('delete', comment.id)"
         >
-          {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          {{ isDeleting ? t('commentItem.actions.deleting') : t('commentItem.actions.delete') }}
         </button>
       </div>
     </div>
@@ -58,6 +58,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { CommentItem as CommentModel } from '@/types/comment'
 import { renderMarkdown } from '@/utils/markdown'
@@ -96,8 +97,9 @@ const emit = defineEmits<{
 
 const isEditing = ref(false)
 const editDraft = ref(props.comment.content)
+const { t } = useI18n()
 
-const displayName = computed(() => props.comment.userName ?? props.comment.username ?? 'unknown')
+const displayName = computed(() => props.comment.userName ?? props.comment.username ?? t('commentItem.authorFallback'))
 const displayTime = computed(() => props.comment.createdTime ?? props.comment.createTime ?? '')
 const renderedHtml = computed(() => renderMarkdown(props.comment.content ?? ''))
 const replyLabel = computed(() => {
@@ -105,15 +107,15 @@ const replyLabel = computed(() => {
   const replyToCommentId = props.comment.replyToCommentId
 
   if (replyUserName && replyToCommentId != null) {
-    return `Reply @${replyUserName} · #${replyToCommentId}`
+    return t('commentItem.reply.toUserAndId', { name: replyUserName, id: replyToCommentId })
   }
 
   if (replyUserName) {
-    return `Reply @${replyUserName}`
+    return t('commentItem.reply.toUser', { name: replyUserName })
   }
 
   if (replyToCommentId != null) {
-    return `Reply #${replyToCommentId}`
+    return t('commentItem.reply.toId', { id: replyToCommentId })
   }
 
   return ''

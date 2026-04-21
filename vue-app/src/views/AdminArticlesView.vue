@@ -1,11 +1,15 @@
 <template>
   <section class="admin-page">
     <header>
-      <h1>Admin Articles</h1>
-      <p>Admin users can soft-delete articles. Editing is author-only.</p>
+      <h1>{{ t('adminArticles.title') }}</h1>
+      <p>{{ t('adminArticles.description') }}</p>
       <form class="search-form" @submit.prevent="submitSearch">
-        <input v-model.trim="keywordInput" type="text" placeholder="Search articles" />
-        <button type="submit">Search</button>
+        <input
+          v-model.trim="keywordInput"
+          type="text"
+          :placeholder="t('adminArticles.searchPlaceholder')"
+        />
+        <button type="submit">{{ t('adminArticles.actions.search') }}</button>
       </form>
     </header>
 
@@ -13,13 +17,13 @@
       <li v-for="article in articles" :key="article.id" class="item">
         <RouterLink class="title" :to="`/article/${article.id}`">{{ article.title }}</RouterLink>
         <div class="meta-grid">
-          <span class="meta"><strong>Author:</strong> {{ article.authorName }}</span>
-          <span class="meta"><strong>Category:</strong> {{ article.categoryName }}</span>
-          <span class="meta"><strong>Status:</strong> {{ formatStatus(article.status) }}</span>
-          <span class="meta"><strong>Top:</strong> {{ formatBoolean(article.isTop) }}</span>
-          <span class="meta"><strong>Comments:</strong> {{ formatBoolean(article.allowComment) }}</span>
-          <span class="meta"><strong>Published:</strong> {{ article.publishTime }}</span>
-          <span class="meta"><strong>Updated:</strong> {{ article.updatedTime }}</span>
+          <span class="meta"><strong>{{ t('adminArticles.labels.author') }}:</strong> {{ article.authorName }}</span>
+          <span class="meta"><strong>{{ t('adminArticles.labels.category') }}:</strong> {{ article.categoryName }}</span>
+          <span class="meta"><strong>{{ t('adminArticles.labels.status') }}:</strong> {{ formatStatus(article.status) }}</span>
+          <span class="meta"><strong>{{ t('adminArticles.labels.top') }}:</strong> {{ formatBoolean(article.isTop) }}</span>
+          <span class="meta"><strong>{{ t('adminArticles.labels.comments') }}:</strong> {{ formatBoolean(article.allowComment) }}</span>
+          <span class="meta"><strong>{{ t('adminArticles.labels.published') }}:</strong> {{ article.publishTime }}</span>
+          <span class="meta"><strong>{{ t('adminArticles.labels.updated') }}:</strong> {{ article.updatedTime }}</span>
         </div>
         <button
           type="button"
@@ -27,16 +31,23 @@
           :disabled="deletingId === article.id"
           @click="deleteFromAdmin(article.id)"
         >
-          {{ deletingId === article.id ? 'Deleting...' : 'Delete' }}
+          {{
+            deletingId === article.id ? t('adminArticles.actions.deleting') : t('adminArticles.actions.delete')
+          }}
         </button>
       </li>
     </ul>
 
-    <EmptyState v-else-if="!isLoading && !errorMessage" message="No admin articles found." />
-    <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+    <EmptyState v-else-if="!isLoading && !errorMessage" :message="t('adminArticles.empty')" />
+    <p v-if="errorMessage" class="error-text">
+      {{ errorMessage }}
+      <button v-if="hasLoadError" type="button" class="retry-btn" @click="retryLoadMore">
+        {{ t('adminArticles.actions.retry') }}
+      </button>
+    </p>
     <LoadingState v-if="isLoading" />
 
-    <p v-if="allLoaded && articles.length > 0" class="end-text">No more articles.</p>
+    <p v-if="allLoaded && articles.length > 0" class="end-text">{{ t('adminArticles.end') }}</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
@@ -44,6 +55,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { deleteArticle, getAdminArticleList } from '@/api/modules/article'
@@ -55,6 +67,7 @@ import type { AdminArticleItem } from '@/types/article'
 const route = useRoute()
 const router = useRouter()
 const pageSize = 10
+const { t } = useI18n()
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
@@ -63,25 +76,26 @@ const page = ref(1)
 const isLoading = ref(false)
 const allLoaded = ref(false)
 const errorMessage = ref('')
+const hasLoadError = ref(false)
 const deletingId = ref<number | null>(null)
 const sentinelRef = ref<HTMLElement | null>(null)
 
-const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
+const observerEnabled = computed(() => !isLoading.value && !allLoaded.value && !hasLoadError.value)
 
 function formatStatus(status: AdminArticleItem['status']): string {
   if (status === 0) {
-    return 'Draft'
+    return t('adminArticles.statuses.draft')
   }
 
   if (status === 1) {
-    return 'Published'
+    return t('adminArticles.statuses.published')
   }
 
-  return 'Deleted'
+  return t('adminArticles.statuses.deleted')
 }
 
 function formatBoolean(value: number): string {
-  return value === 1 ? 'Yes' : 'No'
+  return value === 1 ? t('adminArticles.values.yes') : t('adminArticles.values.no')
 }
 
 function resetState(): void {
@@ -89,6 +103,17 @@ function resetState(): void {
   page.value = 1
   allLoaded.value = false
   errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function clearLoadError(): void {
+  errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function retryLoadMore(): void {
+  clearLoadError()
+  void loadMore()
 }
 
 function buildAdminArticleQuery(currentPage: number) {
@@ -100,12 +125,12 @@ function buildAdminArticleQuery(currentPage: number) {
 }
 
 async function loadMore(): Promise<void> {
-  if (isLoading.value || allLoaded.value) {
+  if (isLoading.value || allLoaded.value || hasLoadError.value) {
     return
   }
 
   isLoading.value = true
-  errorMessage.value = ''
+  clearLoadError()
 
   try {
     const result = await getAdminArticleList(buildAdminArticleQuery(page.value))
@@ -119,10 +144,11 @@ async function loadMore(): Promise<void> {
     articles.value.push(...records)
     page.value += 1
   } catch (error) {
+    hasLoadError.value = true
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to load admin articles.'
+      errorMessage.value = t('adminArticles.errors.loadFailed')
     }
   } finally {
     isLoading.value = false
@@ -158,7 +184,7 @@ async function syncKeyword(): Promise<void> {
 }
 
 async function deleteFromAdmin(articleId: number): Promise<void> {
-  if (!confirm('Delete this article?')) {
+  if (!confirm(t('adminArticles.confirmDelete'))) {
     return
   }
 
@@ -171,7 +197,7 @@ async function deleteFromAdmin(articleId: number): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to delete article.'
+      errorMessage.value = t('adminArticles.errors.deleteFailed')
     }
   } finally {
     deletingId.value = null
@@ -283,6 +309,16 @@ header p {
   border-radius: 12px;
   background: #fff2f2;
   padding: 0.75rem;
+}
+
+.retry-btn {
+  margin-left: 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-text);
+  color: var(--color-surface);
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
 }
 
 .end-text {

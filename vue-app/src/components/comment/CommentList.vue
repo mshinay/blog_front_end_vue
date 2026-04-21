@@ -2,25 +2,25 @@
   <section class="comment-section panel-card" :class="{ 'comment-section--embedded': embedded }">
     <header v-if="!embedded" class="comment-section__header">
       <div class="page-header">
-        <p class="page-eyebrow">Discussion</p>
-        <h2>Comments</h2>
-        <p>Share focused feedback, ask follow-ups, and keep replies readable across nested threads.</p>
+        <p class="page-eyebrow">{{ t('comment.discussionEyebrow') }}</p>
+        <h2>{{ t('comment.discussionTitle') }}</h2>
+        <p>{{ t('comment.discussionDescription') }}</p>
       </div>
-      <span class="ui-pill ui-pill--status">{{ loadedCount }} loaded</span>
+      <span class="ui-pill ui-pill--status">{{ t('comment.loadedCount', { count: loadedCount }) }}</span>
     </header>
 
     <CommentEditor
       v-if="authStore.isAuthenticated"
-      submit-text="Post Comment"
-      loading-text="Posting..."
+      :submit-text="t('comment.post')"
+      :loading-text="t('comment.posting')"
       :loading="isCreating"
       :reset-key="editorResetKey"
-      placeholder="Write your comment in Markdown..."
-      label="New comment"
+      :placeholder="t('comment.editorPlaceholder')"
+      :label="t('comment.editorLabel')"
       @submit="createNewComment"
     />
 
-    <p v-else class="notice-card">Log in to post comments.</p>
+    <p v-else class="notice-card">{{ t('comment.loginToPost') }}</p>
 
     <ul v-if="comments.length > 0" class="comment-list">
       <CommentItem
@@ -43,27 +43,28 @@
 
     <EmptyState
       v-else-if="!isLoading && !errorMessage"
-      eyebrow="Start Discussion"
-      title="No comments yet."
-      message="Be the first to leave a thoughtful note on this article."
+      :eyebrow="t('comment.emptyEyebrow')"
+      :title="t('comment.emptyTitle')"
+      :message="t('comment.emptyMessage')"
     />
 
     <p v-if="errorMessage" class="error-text">
       {{ errorMessage }}
       <button v-if="hasLoadError" type="button" class="retry-btn secondary btn-sm" @click="retryLoadMoreComments">
-        Retry
+        {{ t('common.retry') }}
       </button>
     </p>
 
     <LoadingState v-if="isLoading" />
 
-    <p v-if="allLoaded && comments.length > 0" class="muted-text comment-section__end">No more comments.</p>
+    <p v-if="allLoaded && comments.length > 0" class="muted-text comment-section__end">{{ t('comment.end') }}</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { createComment, deleteComment, getCommentList, updateComment } from '@/api/modules/comment'
@@ -87,6 +88,7 @@ const props = withDefaults(
 )
 
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const comments = ref<CommentNode[]>([])
 const page = ref(1)
@@ -163,7 +165,7 @@ async function loadMoreComments(): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to load comments.'
+      errorMessage.value = t('comment.errors.loadFailed')
     }
   } finally {
     isLoading.value = false
@@ -172,7 +174,7 @@ async function loadMoreComments(): Promise<void> {
 
 async function createNewComment(content: string): Promise<void> {
   if (!authStore.isAuthenticated) {
-    errorMessage.value = 'Please log in before posting comments.'
+    errorMessage.value = t('comment.errors.loginBeforePost')
     return
   }
 
@@ -195,7 +197,7 @@ async function createNewComment(content: string): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to post comment.'
+      errorMessage.value = t('comment.errors.postFailed')
     }
   } finally {
     isCreating.value = false
@@ -227,7 +229,7 @@ async function updateExistingComment(payload: { id: number; content: string }): 
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to update comment.'
+      errorMessage.value = t('comment.errors.updateFailed')
     }
   } finally {
     updatingId.value = null
@@ -250,7 +252,7 @@ async function deleteExistingComment(commentId: number): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to delete comment.'
+      errorMessage.value = t('comment.errors.deleteFailed')
     }
   } finally {
     deletingId.value = null

@@ -1,41 +1,43 @@
 <template>
   <section class="panel-card comments-panel">
     <div class="page-header">
-      <p class="page-eyebrow">Discussion Archive</p>
-      <h2>My Comments</h2>
-      <p>Review your discussion history, edit what you have written, and return to the articles behind each exchange.</p>
+      <p class="page-eyebrow">{{ t('personComments.header.eyebrow') }}</p>
+      <h2>{{ t('personComments.header.title') }}</h2>
+      <p>{{ t('personComments.header.description') }}</p>
     </div>
 
     <form class="content-card comments-search" @submit.prevent="submitSearch">
       <label class="comments-search__field" for="person-comment-search">
-        <span>Search your comments</span>
+        <span>{{ t('personComments.search.label') }}</span>
         <input
           id="person-comment-search"
           v-model.trim="keywordInput"
           class="ui-input"
           type="text"
-          placeholder="Search your comments"
+          :placeholder="t('personComments.search.placeholder')"
         />
       </label>
       <div class="comments-search__actions">
-        <button type="submit">Search</button>
-        <button type="button" class="secondary" @click="resetSearch">Reset</button>
+        <button type="submit">{{ t('personComments.search.submit') }}</button>
+        <button type="button" class="secondary" @click="resetSearch">{{ t('personComments.search.reset') }}</button>
       </div>
     </form>
 
     <div v-if="comments.length > 0" class="surface-stack">
       <article v-for="comment in comments" :key="comment.id" class="content-card comment-item">
         <p class="comment-item__meta">
-          <RouterLink :to="`/article/${comment.articleId}`">Article #{{ comment.articleId }}</RouterLink>
+          <RouterLink :to="`/article/${comment.articleId}`">
+            {{ t('personComments.item.articleRef', { id: comment.articleId }) }}
+          </RouterLink>
           <span>{{ comment.createTime ?? '' }}</span>
         </p>
 
         <div v-if="editingId === comment.id" class="comment-item__editor">
           <textarea v-model.trim="editingContent" class="ui-textarea" rows="4" />
           <div class="comment-item__actions">
-            <button type="button" class="secondary" @click="cancelEdit">Cancel</button>
+            <button type="button" class="secondary" @click="cancelEdit">{{ t('personComments.editor.cancel') }}</button>
             <button type="button" :disabled="savingId === comment.id" @click="saveEdit(comment.id)">
-              {{ savingId === comment.id ? 'Saving...' : 'Save' }}
+              {{ savingId === comment.id ? t('personComments.editor.saving') : t('personComments.editor.save') }}
             </button>
           </div>
         </div>
@@ -44,14 +46,14 @@
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="comment-item__content" v-html="renderMarkdown(comment.content)" />
           <div class="comment-item__actions">
-            <button type="button" class="secondary" @click="startEdit(comment)">Edit</button>
+            <button type="button" class="secondary" @click="startEdit(comment)">{{ t('personComments.item.edit') }}</button>
             <button
               type="button"
               class="danger"
               :disabled="deletingId === comment.id"
               @click="deleteOwnedComment(comment.id)"
             >
-              {{ deletingId === comment.id ? 'Deleting...' : 'Delete' }}
+              {{ deletingId === comment.id ? t('personComments.item.deleting') : t('personComments.item.delete') }}
             </button>
           </div>
         </template>
@@ -60,23 +62,26 @@
 
     <EmptyState
       v-else-if="!isLoading && !errorMessage"
-      eyebrow="No Discussion Yet"
-      title="Your comment archive is empty."
-      message="Once you join article discussions, your messages will appear here for revisits and edits."
+      :eyebrow="t('personComments.empty.eyebrow')"
+      :title="t('personComments.empty.title')"
+      :message="t('personComments.empty.message')"
     />
     <p v-if="errorMessage" class="error-text">
       {{ errorMessage }}
-      <button v-if="hasLoadError" type="button" class="secondary btn-sm" @click="retryLoadMore">Retry</button>
+      <button v-if="hasLoadError" type="button" class="secondary btn-sm" @click="retryLoadMore">
+        {{ t('common.retry') }}
+      </button>
     </p>
     <LoadingState v-if="isLoading" />
 
-    <p v-if="allLoaded && comments.length > 0" class="muted-text comments-panel__end">No more comments.</p>
+    <p v-if="allLoaded && comments.length > 0" class="muted-text comments-panel__end">{{ t('personComments.end') }}</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import {
@@ -93,6 +98,7 @@ import type { CommentItem } from '@/types/comment'
 import { renderMarkdown } from '@/utils/markdown'
 
 const authStore = useAuthStore()
+const { t } = useI18n()
 // API note: user-comment listing/search still depends on legacy endpoints because
 // the standardized interface docs do not define an equivalent user-comment list API.
 
@@ -134,7 +140,7 @@ function retryLoadMore(): void {
 async function loadMore(): Promise<void> {
   const userId = authStore.currentUser?.id
   if (!userId) {
-    errorMessage.value = 'Please log in to view your comments.'
+    errorMessage.value = t('personComments.errors.loginRequired')
     allLoaded.value = true
     return
   }
@@ -163,7 +169,7 @@ async function loadMore(): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to load your comments.'
+      errorMessage.value = t('personComments.errors.loadFailed')
     }
   } finally {
     isLoading.value = false
@@ -196,7 +202,7 @@ function cancelEdit(): void {
 async function saveEdit(commentId: number): Promise<void> {
   const content = editingContent.value.trim()
   if (!content) {
-    errorMessage.value = 'Comment content cannot be empty.'
+    errorMessage.value = t('personComments.errors.contentEmpty')
     return
   }
 
@@ -213,7 +219,7 @@ async function saveEdit(commentId: number): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to update comment.'
+      errorMessage.value = t('personComments.errors.updateFailed')
     }
   } finally {
     savingId.value = null
@@ -221,7 +227,7 @@ async function saveEdit(commentId: number): Promise<void> {
 }
 
 async function deleteOwnedComment(commentId: number): Promise<void> {
-  if (!confirm('Delete this comment?')) {
+  if (!confirm(t('personComments.confirm.delete'))) {
     return
   }
 
@@ -237,7 +243,7 @@ async function deleteOwnedComment(commentId: number): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to delete comment.'
+      errorMessage.value = t('personComments.errors.deleteFailed')
     }
   } finally {
     deletingId.value = null

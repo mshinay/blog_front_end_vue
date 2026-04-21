@@ -1,58 +1,58 @@
 <template>
   <form class="editor-shell" @submit.prevent="handleSubmit">
     <div class="field-block">
-      <label for="article-title">Title</label>
+      <label for="article-title">{{ t('editor.fields.title') }}</label>
       <input
         id="article-title"
         v-model.trim="title"
         type="text"
-        placeholder="Enter article title"
+        :placeholder="t('editor.placeholders.title')"
         :disabled="submitting || loading"
       />
     </div>
 
     <div v-if="requireFullPayload" class="field-block">
-      <label for="article-slug">Slug</label>
+      <label for="article-slug">{{ t('editor.fields.slug') }}</label>
       <input
         id="article-slug"
         v-model.trim="slug"
         type="text"
-        placeholder="Enter article slug"
+        :placeholder="t('editor.placeholders.slug')"
         :disabled="submitting || loading"
       />
     </div>
 
     <div v-if="requireFullPayload" class="field-block">
-      <label for="article-summary">Summary</label>
+      <label for="article-summary">{{ t('editor.fields.summary') }}</label>
       <textarea
         id="article-summary"
         v-model.trim="summary"
         rows="3"
-        placeholder="Enter article summary"
+        :placeholder="t('editor.placeholders.summary')"
         :disabled="submitting || loading"
       />
     </div>
 
     <div v-if="requireFullPayload" class="field-block">
-      <label for="article-cover">Cover URL</label>
+      <label for="article-cover">{{ t('editor.fields.coverUrl') }}</label>
       <input
         id="article-cover"
         v-model.trim="coverUrl"
         type="url"
-        placeholder="Enter cover image URL"
+        :placeholder="t('editor.placeholders.coverUrl')"
         :disabled="submitting || loading"
       />
     </div>
 
     <div v-if="requireFullPayload" class="field-grid">
       <div class="field-block">
-        <label for="article-category">Category</label>
+        <label for="article-category">{{ t('editor.fields.category') }}</label>
         <select
           id="article-category"
           v-model="categoryId"
           :disabled="submitting || loading"
         >
-          <option :value="null">Select a category</option>
+          <option :value="null">{{ t('editor.options.selectCategory') }}</option>
           <option v-for="category in categories" :key="category.id" :value="category.id">
             {{ category.name }}
           </option>
@@ -60,21 +60,21 @@
       </div>
 
       <div class="field-block">
-        <label for="article-status">Status</label>
+        <label for="article-status">{{ t('editor.fields.status') }}</label>
         <select
           id="article-status"
           v-model="status"
           :disabled="submitting || loading"
         >
-          <option :value="1">Published</option>
-          <option :value="0">Draft</option>
+          <option :value="1">{{ t('editor.options.published') }}</option>
+          <option :value="0">{{ t('editor.options.draft') }}</option>
         </select>
       </div>
     </div>
 
     <div v-if="requireFullPayload" class="field-grid">
       <div class="field-block">
-        <label for="article-tags">Tags</label>
+        <label for="article-tags">{{ t('editor.fields.tags') }}</label>
         <select
           id="article-tags"
           multiple
@@ -93,20 +93,20 @@
       </div>
 
       <div class="field-block field-toggle">
-        <label for="article-allow-comment">Allow Comments</label>
+        <label for="article-allow-comment">{{ t('editor.fields.allowComments') }}</label>
         <select
           id="article-allow-comment"
           v-model="allowComment"
           :disabled="submitting || loading"
         >
-          <option :value="1">Enabled</option>
-          <option :value="0">Disabled</option>
+          <option :value="1">{{ t('editor.options.enabled') }}</option>
+          <option :value="0">{{ t('editor.options.disabled') }}</option>
         </select>
       </div>
     </div>
 
     <div class="field-block">
-      <label>Content</label>
+      <label>{{ t('editor.fields.content') }}</label>
       <ByteMdEditor
         :value="content"
         :plugins="plugins"
@@ -120,7 +120,7 @@
 
     <div class="actions">
       <button type="submit" :disabled="submitting || loading">
-        {{ submitting ? submittingText : submitText }}
+        {{ submitting ? resolvedSubmittingText : resolvedSubmitText }}
       </button>
       <button
         v-if="showCancel"
@@ -129,14 +129,15 @@
         :disabled="submitting"
         @click="emit('cancel')"
       >
-        Cancel
+        {{ t('common.cancel') }}
       </button>
     </div>
   </form>
 </template>
 
 <script setup lang="ts">
-import { defineAsyncComponent, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import gfm from '@bytemd/plugin-gfm'
 import highlight from '@bytemd/plugin-highlight'
 
@@ -173,8 +174,8 @@ const props = withDefaults(
     categories?: CategoryListItem[]
     tags?: TagListItem[]
     requireFullPayload?: boolean
-    submitText?: string
-    submittingText?: string
+    submitText?: string | null
+    submittingText?: string | null
     loading?: boolean
     submitting?: boolean
     showCancel?: boolean
@@ -192,8 +193,8 @@ const props = withDefaults(
     categories: () => [],
     tags: () => [],
     requireFullPayload: false,
-    submitText: 'Save Article',
-    submittingText: 'Saving...',
+    submitText: null,
+    submittingText: null,
     loading: false,
     submitting: false,
     showCancel: false,
@@ -216,6 +217,10 @@ const allowComment = ref<CommentPermissionValue>(props.initialAllowComment as Co
 const status = ref<ArticleStatusValue>(props.initialStatus as ArticleStatusValue)
 const errorMessage = ref('')
 const plugins = [gfm(), highlight()]
+const { t } = useI18n()
+
+const resolvedSubmitText = computed(() => props.submitText ?? t('editor.actions.saveArticle'))
+const resolvedSubmittingText = computed(() => props.submittingText ?? t('editor.actions.saving'))
 
 watch(
   () => props.initialTitle,
@@ -293,12 +298,12 @@ function handleTagIdsChange(event: Event): void {
 
 function handleSubmit(): void {
   if (!title.value.trim()) {
-    errorMessage.value = 'Title cannot be empty.'
+    errorMessage.value = t('editor.errors.titleEmpty')
     return
   }
 
   if (!content.value.trim()) {
-    errorMessage.value = 'Content cannot be empty.'
+    errorMessage.value = t('editor.errors.contentEmpty')
     return
   }
 
@@ -312,22 +317,22 @@ function handleSubmit(): void {
   }
 
   if (!slug.value.trim()) {
-    errorMessage.value = 'Slug cannot be empty.'
+    errorMessage.value = t('editor.errors.slugEmpty')
     return
   }
 
   if (!summary.value.trim()) {
-    errorMessage.value = 'Summary cannot be empty.'
+    errorMessage.value = t('editor.errors.summaryEmpty')
     return
   }
 
   if (!coverUrl.value.trim()) {
-    errorMessage.value = 'Cover URL cannot be empty.'
+    errorMessage.value = t('editor.errors.coverEmpty')
     return
   }
 
   if (!categoryId.value) {
-    errorMessage.value = 'Please select a category.'
+    errorMessage.value = t('editor.errors.categoryRequired')
     return
   }
 

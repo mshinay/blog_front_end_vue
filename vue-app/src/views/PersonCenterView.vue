@@ -5,46 +5,55 @@
     <section v-else class="surface-stack">
       <section class="hero-surface person-hero">
         <div class="person-hero__intro">
-          <p class="page-eyebrow">Author Space</p>
+          <p class="page-eyebrow">{{ t('personCenter.hero.eyebrow') }}</p>
           <div class="person-hero__heading">
             <h1>{{ displayName }}</h1>
-            <p>
-              A quieter place to manage your public profile, review what you have published, and
-              keep your discussions close at hand.
-            </p>
+            <p>{{ t('personCenter.hero.description') }}</p>
           </div>
 
           <div v-if="profile" class="person-hero__identity">
             <img
               class="person-hero__avatar"
               :src="profile.avatarUrl || '/vite.svg'"
-              alt="Current user avatar"
+              :alt="t('personCenter.identity.avatarAlt')"
             />
             <div class="person-hero__copy">
               <p class="person-hero__username">@{{ profile.username }}</p>
-              <p class="person-hero__bio">{{ profile.bio || 'Shape this space with a short bio and a recognizable profile.' }}</p>
+              <p class="person-hero__bio">
+                {{ profile.bio || t('personCenter.identity.bioFallback') }}
+              </p>
             </div>
           </div>
         </div>
 
         <div class="panel-grid person-hero__stats">
           <article class="stats-tile">
-            <span class="person-hero__stat-label">Current focus</span>
+            <span class="person-hero__stat-label">{{ t('personCenter.stats.currentFocusLabel') }}</span>
             <strong>{{ activeTabLabel }}</strong>
             <p>{{ activeTabDescription }}</p>
           </article>
           <article class="stats-tile">
-            <span class="person-hero__stat-label">Profile status</span>
-            <strong>{{ profile?.bio ? 'Profile in shape' : 'Needs a short bio' }}</strong>
+            <span class="person-hero__stat-label">{{ t('personCenter.stats.profileStatusLabel') }}</span>
+            <strong>
+              {{
+                profile?.bio
+                  ? t('personCenter.stats.profileReadyTitle')
+                  : t('personCenter.stats.profileNeedsBioTitle')
+              }}
+            </strong>
             <p>
-              {{ profile?.bio ? 'Your public presence already carries your voice across the app.' : 'A short bio helps your comments and posts feel authored.' }}
+              {{
+                profile?.bio
+                  ? t('personCenter.stats.profileReadyDescription')
+                  : t('personCenter.stats.profileNeedsBioDescription')
+              }}
             </p>
           </article>
         </div>
       </section>
 
       <section class="panel-card person-shell">
-        <nav class="person-tabs" aria-label="Personal center sections">
+        <nav class="person-tabs" :aria-label="t('personCenter.tabs.ariaLabel')">
           <button
             v-for="tab in tabs"
             :key="tab"
@@ -75,6 +84,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { getPublicUser } from '@/api/modules/user'
@@ -89,23 +99,30 @@ import { PERSON_TABS, resolvePersonTab, type PersonTab } from '@/utils/person-ta
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const tabs = PERSON_TABS
-const tabLabelMap: Record<PersonTab, string> = {
-  account: 'Account Settings',
-  articles: 'My Blogs',
-  comments: 'My Comments',
-}
-const tabHintMap: Record<PersonTab, string> = {
-  account: 'Profile, avatar, and bio',
-  articles: 'Published writing and actions',
-  comments: 'Discussion history and edits',
-}
-const tabDescriptionMap: Record<PersonTab, string> = {
-  account: 'Refresh your public author profile and keep your presentation current.',
-  articles: 'Review published work, revisit summaries, and manage article actions.',
-  comments: 'Track your reading conversations, edits, and reply history in one place.',
-}
+const tabLabelMap = computed<Record<PersonTab, string>>(() => {
+  return {
+    account: t('personCenter.tabs.accountLabel'),
+    articles: t('personCenter.tabs.articlesLabel'),
+    comments: t('personCenter.tabs.commentsLabel'),
+  }
+})
+const tabHintMap = computed<Record<PersonTab, string>>(() => {
+  return {
+    account: t('personCenter.tabs.accountHint'),
+    articles: t('personCenter.tabs.articlesHint'),
+    comments: t('personCenter.tabs.commentsHint'),
+  }
+})
+const tabDescriptionMap = computed<Record<PersonTab, string>>(() => {
+  return {
+    account: t('personCenter.tabs.accountDescription'),
+    articles: t('personCenter.tabs.articlesDescription'),
+    comments: t('personCenter.tabs.commentsDescription'),
+  }
+})
 
 const activeTab = ref<PersonTab>('account')
 const profile = ref<UserProfile | null>(null)
@@ -113,17 +130,22 @@ const isProfileLoading = ref(false)
 const profileError = ref('')
 
 const displayName = computed(() => {
-  return profile.value?.nickname || profile.value?.username || authStore.currentUser?.nickname || 'Personal Center'
+  return (
+    profile.value?.nickname ||
+    profile.value?.username ||
+    authStore.currentUser?.nickname ||
+    t('personCenter.titleFallback')
+  )
 })
 
-const activeTabLabel = computed(() => tabLabelMap[activeTab.value])
-const activeTabDescription = computed(() => tabDescriptionMap[activeTab.value])
+const activeTabLabel = computed(() => tabLabelMap.value[activeTab.value])
+const activeTabDescription = computed(() => tabDescriptionMap.value[activeTab.value])
 
 async function loadProfile(): Promise<void> {
   const userId = authStore.currentUser?.id
   if (!userId) {
     profile.value = null
-    profileError.value = 'Unable to identify current user.'
+    profileError.value = t('personCenter.errors.missingUser')
     return
   }
 
@@ -136,7 +158,7 @@ async function loadProfile(): Promise<void> {
     if (error instanceof AppError) {
       profileError.value = error.message
     } else {
-      profileError.value = 'Failed to load profile.'
+      profileError.value = t('personCenter.errors.loadFailed')
     }
   } finally {
     isProfileLoading.value = false

@@ -2,85 +2,81 @@
   <section class="page-shell page-shell--wide auth-page">
     <div class="auth-stage">
       <aside class="hero-surface auth-story">
-        <p class="page-eyebrow">Reader Access</p>
+        <p class="page-eyebrow">{{ t('loginView.story.eyebrow') }}</p>
         <div class="auth-story__header">
-          <h1>Return to your reading desk.</h1>
-          <p>
-            Pick up drafts, saved thoughts, and your latest conversations inside a calmer,
-            more intentional blog workspace.
-          </p>
+          <h1>{{ t('loginView.story.title') }}</h1>
+          <p>{{ t('loginView.story.description') }}</p>
         </div>
 
         <div class="auth-story__stats">
           <article class="stats-tile">
-            <span class="auth-story__label">Made For</span>
-            <strong>Long-form reading</strong>
-            <p>Structured pages, calmer surfaces, and a sharper editorial rhythm across the app.</p>
+            <span class="auth-story__label">{{ t('loginView.story.stats.madeForLabel') }}</span>
+            <strong>{{ t('loginView.story.stats.madeForTitle') }}</strong>
+            <p>{{ t('loginView.story.stats.madeForDescription') }}</p>
           </article>
           <article class="stats-tile">
-            <span class="auth-story__label">Keeps</span>
-            <strong>Your place</strong>
-            <p>Jump back into search, article detail, and your author space without losing momentum.</p>
+            <span class="auth-story__label">{{ t('loginView.story.stats.keepsLabel') }}</span>
+            <strong>{{ t('loginView.story.stats.keepsTitle') }}</strong>
+            <p>{{ t('loginView.story.stats.keepsDescription') }}</p>
           </article>
         </div>
 
         <div class="panel-card auth-story__note">
-          <p class="page-eyebrow">What Awaits</p>
+          <p class="page-eyebrow">{{ t('loginView.story.note.eyebrow') }}</p>
           <ul class="auth-story__list">
-            <li>Revisit current writing threads and personal discussion history.</li>
-            <li>Manage your profile, drafts, and publishing flow from one authored workspace.</li>
-            <li>Stay in the same editorial system across homepage, reading pages, and search.</li>
+            <li>{{ t('loginView.story.note.item1') }}</li>
+            <li>{{ t('loginView.story.note.item2') }}</li>
+            <li>{{ t('loginView.story.note.item3') }}</li>
           </ul>
         </div>
       </aside>
 
       <form class="panel-card auth-panel" @submit.prevent="handleSubmit">
         <div class="page-header auth-panel__header">
-          <p class="page-eyebrow">Welcome Back</p>
-          <h2>Log in to continue</h2>
-          <p>Use your existing account to return to articles, comments, and your author tools.</p>
+          <p class="page-eyebrow">{{ t('loginView.panel.eyebrow') }}</p>
+          <h2>{{ t('loginView.panel.title') }}</h2>
+          <p>{{ t('loginView.panel.description') }}</p>
         </div>
 
         <div class="auth-panel__fields">
           <label class="auth-field" for="login-username">
-            <span>Username</span>
+            <span>{{ t('fields.username') }}</span>
             <input
               id="login-username"
               v-model.trim="form.username"
               class="ui-input"
               type="text"
               autocomplete="username"
-              placeholder="Enter your username"
+              :placeholder="t('loginView.panel.usernamePlaceholder')"
               required
             />
           </label>
 
           <label class="auth-field" for="login-password">
-            <span>Password</span>
+            <span>{{ t('fields.password') }}</span>
             <input
               id="login-password"
               v-model="form.password"
               class="ui-input"
               type="password"
               autocomplete="current-password"
-              placeholder="Enter your password"
+              :placeholder="t('loginView.panel.passwordPlaceholder')"
               required
             />
           </label>
         </div>
 
-        <p class="auth-panel__meta">
-          Logging in keeps your current reading path and redirects you back when a protected page
-          asked for auth first.
-        </p>
+        <p class="auth-panel__meta">{{ t('loginView.panel.meta') }}</p>
 
         <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
 
         <div class="auth-panel__actions">
           <button :disabled="authStore.isLoading" type="submit" class="btn-lg">
-            {{ authStore.isLoading ? 'Logging in...' : 'Log in' }}
+            {{ authStore.isLoading ? t('loginView.actions.submitting') : t('loginView.actions.submit') }}
           </button>
-          <RouterLink class="btn secondary btn-lg" to="/register">Create an account</RouterLink>
+          <RouterLink class="btn secondary btn-lg" to="/register">
+            {{ t('loginView.actions.createAccount') }}
+          </RouterLink>
         </div>
       </form>
     </div>
@@ -90,6 +86,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
@@ -97,6 +94,7 @@ import { useAuthStore } from '@/stores/auth'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const form = reactive({
   username: '',
@@ -108,7 +106,7 @@ async function handleSubmit(): Promise<void> {
   errorMessage.value = ''
 
   if (!form.username || !form.password) {
-    errorMessage.value = 'Please enter username and password.'
+    errorMessage.value = t('loginView.errors.missingCredentials')
     return
   }
 
@@ -126,7 +124,7 @@ async function handleSubmit(): Promise<void> {
       return
     }
 
-    errorMessage.value = 'Login failed, please try again.'
+    errorMessage.value = t('loginView.errors.loginFailed')
   }
 }
 </script>

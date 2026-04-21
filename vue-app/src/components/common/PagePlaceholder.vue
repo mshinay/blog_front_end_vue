@@ -1,16 +1,20 @@
 <template>
   <section class="placeholder-card">
-    <p class="eyebrow">Stage 1 Skeleton</p>
+    <p class="eyebrow">{{ t('states.placeholderEyebrow') }}</p>
     <h1>{{ title }}</h1>
     <p>{{ description }}</p>
   </section>
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 defineProps<{
   title: string
   description: string
 }>()
+
+const { t } = useI18n()
 </script>
 
 <style scoped>

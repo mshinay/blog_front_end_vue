@@ -18,7 +18,7 @@
             aria-controls="global-nav-panel"
             @click="toggleMenu"
           >
-            <span class="app-header__menu-label">Menu</span>
+            <span class="app-header__menu-label">{{ t('header.menu') }}</span>
             <span class="app-header__menu-icon" aria-hidden="true">
               <span />
               <span />
@@ -28,7 +28,7 @@
         </div>
 
         <div id="global-nav-panel" class="app-header__panel" :class="{ 'is-open': isMenuOpen }">
-          <nav class="primary-nav" aria-label="Primary navigation">
+          <nav class="primary-nav" :aria-label="t('header.primaryNavAria')">
             <RouterLink
               v-for="item in primaryNavItems"
               :key="item.to"
@@ -42,7 +42,7 @@
           </nav>
 
           <div v-if="authStore.isAdmin" class="admin-nav">
-            <span class="admin-nav__label">Admin</span>
+            <span class="admin-nav__label">{{ t('nav.admin') }}</span>
             <div class="admin-nav__links">
               <RouterLink
                 v-for="item in adminNavItems"
@@ -58,18 +58,30 @@
 
           <div class="auth-actions">
             <div v-if="authStore.isAuthenticated" class="auth-actions__identity">
-              <span class="auth-actions__eyebrow">Signed in</span>
+              <span class="auth-actions__eyebrow">{{ t('header.signedIn') }}</span>
               <span class="auth-actions__name">{{ authStore.currentUser?.username }}</span>
             </div>
 
             <div class="auth-actions__buttons">
+              <label class="locale-switch">
+                <span class="locale-switch__label">{{ t('header.languageAria') }}</span>
+                <select
+                  class="locale-switch__select"
+                  :value="locale"
+                  :aria-label="t('header.languageAria')"
+                  @change="handleLocaleChange"
+                >
+                  <option value="en">{{ t('locale.english') }}</option>
+                  <option value="zh-CN">{{ t('locale.zhCN') }}</option>
+                </select>
+              </label>
               <RouterLink
                 v-if="!authStore.isAuthenticated"
                 class="btn ghost btn-sm"
                 to="/login"
                 @click="closeMenu"
               >
-                Log in
+                {{ t('auth.login') }}
               </RouterLink>
               <RouterLink
                 v-if="!authStore.isAuthenticated"
@@ -77,10 +89,10 @@
                 to="/register"
                 @click="closeMenu"
               >
-                Sign up
+                {{ t('auth.register') }}
               </RouterLink>
               <button v-else class="btn secondary btn-sm" type="button" @click="handleLogout">
-                Log out
+                {{ t('auth.logout') }}
               </button>
             </div>
           </div>
@@ -91,9 +103,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+import { useLocale } from '@/i18n'
+import { isSupportedLocale } from '@/i18n/locale'
 import { useAuthStore } from '@/stores/auth'
 
 type NavItem = {
@@ -102,17 +117,20 @@ type NavItem = {
   to: string
 }
 
-const primaryNavItems: NavItem[] = [
-  { label: 'Home', hint: 'Latest writing', to: '/main' },
-  { label: 'Search', hint: 'Find stories fast', to: '/search' },
-  { label: 'Write', hint: 'Publish a post', to: '/upload' },
-  { label: 'Profile', hint: 'Your author space', to: '/person' },
-]
+const { t } = useI18n()
+const { locale, setLocale } = useLocale()
 
-const adminNavItems: NavItem[] = [
-  { label: 'Articles', hint: 'Moderate posts', to: '/admin/articles' },
-  { label: 'Comments', hint: 'Review discussion', to: '/admin/comments' },
-]
+const primaryNavItems = computed<NavItem[]>(() => [
+  { label: t('nav.home'), hint: t('navHints.home'), to: '/main' },
+  { label: t('nav.search'), hint: t('navHints.search'), to: '/search' },
+  { label: t('nav.write'), hint: t('navHints.write'), to: '/upload' },
+  { label: t('nav.profile'), hint: t('navHints.profile'), to: '/person' },
+])
+
+const adminNavItems = computed<NavItem[]>(() => [
+  { label: t('nav.articles'), hint: t('navHints.articles'), to: '/admin/articles' },
+  { label: t('nav.comments'), hint: t('navHints.comments'), to: '/admin/comments' },
+])
 
 const route = useRoute()
 const router = useRouter()
@@ -132,6 +150,11 @@ function toggleMenu(): void {
 
 function closeMenu(): void {
   isMenuOpen.value = false
+}
+
+function handleLocaleChange(event: Event): void {
+  const nextLocale = (event.target as HTMLSelectElement | null)?.value
+  if (isSupportedLocale(nextLocale)) setLocale(nextLocale)
 }
 
 function handleLogout(): void {
@@ -378,6 +401,43 @@ function handleLogout(): void {
   display: flex;
   align-items: center;
   gap: var(--space-8);
+}
+
+.locale-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.locale-switch__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.locale-switch__select {
+  min-height: var(--control-height-sm);
+  padding: 0 var(--space-10);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-surface) 84%, white);
+  color: var(--color-text-soft);
+  font-size: var(--text-meta);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.locale-switch__select:hover,
+.locale-switch__select:focus-visible {
+  border-color: var(--color-border-strong);
+  outline: none;
 }
 
 @media (max-width: 1120px) {

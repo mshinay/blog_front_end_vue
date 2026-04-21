@@ -10,7 +10,7 @@
         />
         <div v-else class="article-card__placeholder">
           <span class="page-eyebrow article-card__placeholder-label">
-            {{ article.categoryName || 'Editorial Pick' }}
+            {{ article.categoryName || t('articleCard.placeholderCategory') }}
           </span>
           <strong>{{ placeholderMonogram }}</strong>
         </div>
@@ -22,9 +22,9 @@
 
       <div class="article-card__content">
         <div class="article-card__eyebrow-row">
-          <span v-if="article.isTop" class="ui-pill ui-pill--status">Top Pick</span>
+          <span v-if="article.isTop" class="ui-pill ui-pill--status">{{ t('articleCard.topPick') }}</span>
           <span class="page-eyebrow article-card__eyebrow">
-            {{ variant === 'featured' ? 'Featured Story' : 'Fresh Read' }}
+            {{ variant === 'featured' ? t('articleCard.eyebrowFeatured') : t('articleCard.eyebrowFresh') }}
           </span>
         </div>
 
@@ -57,8 +57,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { ArticleCardModel } from '@/types/article'
+
+const { t, locale } = useI18n()
 
 const props = withDefaults(
   defineProps<{
@@ -93,7 +96,11 @@ const visibleTags = computed(() => {
 
 const showSummary = computed(() => Boolean(summaryText.value))
 
-const authorText = computed(() => `By ${props.article.authorName || 'Unknown author'}`)
+const authorText = computed(() =>
+  t('articleCard.byAuthor', {
+    name: props.article.authorName || t('articleCard.unknownAuthor'),
+  }),
+)
 
 const publishedText = computed(() => formatDate(props.article.publishTime || props.article.createTime))
 
@@ -106,11 +113,11 @@ const statItems = computed(() => {
   const items: Array<{ label: string; value: string }> = []
 
   if (typeof props.article.viewCount === 'number') {
-    items.push({ label: 'Views', value: compactNumber(props.article.viewCount) })
+    items.push({ label: t('articleCard.views'), value: compactNumber(props.article.viewCount) })
   }
 
   if (typeof props.article.commentCount === 'number') {
-    items.push({ label: 'Comments', value: compactNumber(props.article.commentCount) })
+    items.push({ label: t('articleCard.comments'), value: compactNumber(props.article.commentCount) })
   }
 
   return props.variant === 'compact' ? items.slice(0, 1) : items.slice(0, 2)
@@ -118,7 +125,7 @@ const statItems = computed(() => {
 
 function formatDate(value?: string): string {
   if (!value) {
-    return 'Draft date unavailable'
+    return t('articleCard.draftDateUnavailable')
   }
 
   const date = new Date(value)
@@ -126,7 +133,7 @@ function formatDate(value?: string): string {
     return value
   }
 
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(locale.value, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -134,7 +141,7 @@ function formatDate(value?: string): string {
 }
 
 function compactNumber(value: number): string {
-  return new Intl.NumberFormat('en', {
+  return new Intl.NumberFormat(locale.value, {
     notation: value >= 1000 ? 'compact' : 'standard',
     maximumFractionDigits: value >= 1000 ? 1 : 0,
   }).format(value)

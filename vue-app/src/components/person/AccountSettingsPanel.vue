@@ -1,30 +1,40 @@
 <template>
   <section class="panel-card account-panel">
     <div class="page-header account-panel__header">
-      <p class="page-eyebrow">Profile Studio</p>
-      <h2>Account Settings</h2>
-      <p>Keep your public author details current so comments and articles feel recognizably yours.</p>
+      <p class="page-eyebrow">{{ t('personAccount.header.eyebrow') }}</p>
+      <h2>{{ t('personAccount.header.title') }}</h2>
+      <p>{{ t('personAccount.header.description') }}</p>
     </div>
 
     <section v-if="profile" class="content-card account-summary">
-      <img class="account-summary__avatar" :src="profile.avatarUrl || '/vite.svg'" alt="Profile avatar" />
+      <img
+        class="account-summary__avatar"
+        :src="profile.avatarUrl || '/vite.svg'"
+        :alt="t('personAccount.summary.avatarAlt')"
+      />
       <div class="account-summary__copy">
         <p class="account-summary__name">{{ profile.nickname || profile.username }}</p>
         <p class="account-summary__username">@{{ profile.username }}</p>
-        <p class="account-summary__bio">{{ profile.bio || 'No bio yet.' }}</p>
+        <p class="account-summary__bio">{{ profile.bio || t('personAccount.summary.noBio') }}</p>
       </div>
     </section>
 
     <div class="panel-grid">
       <article class="stats-tile">
-        <span class="account-panel__label">Profile photo</span>
-        <strong>{{ authStore.currentUser?.avatarUrl ? 'Set' : 'Missing' }}</strong>
-        <p>Upload an avatar so your profile and discussion presence feel easier to recognize.</p>
+        <span class="account-panel__label">{{ t('personAccount.tiles.profilePhotoLabel') }}</span>
+        <strong>
+          {{
+            authStore.currentUser?.avatarUrl
+              ? t('personAccount.tiles.profilePhotoSet')
+              : t('personAccount.tiles.profilePhotoMissing')
+          }}
+        </strong>
+        <p>{{ t('personAccount.tiles.profilePhotoMessage') }}</p>
       </article>
       <article class="stats-tile">
-        <span class="account-panel__label">Bio length</span>
+        <span class="account-panel__label">{{ t('personAccount.tiles.bioLengthLabel') }}</span>
         <strong>{{ bioInput.trim().length }}</strong>
-        <p>Short, specific bios work best here. The limit stays at 300 characters.</p>
+        <p>{{ t('personAccount.tiles.bioLengthMessage', { max: 300 }) }}</p>
       </article>
     </div>
 
@@ -33,15 +43,15 @@
 
     <section class="content-card account-avatar">
       <div class="account-avatar__preview">
-        <img class="account-avatar__image" :src="avatarPreview" alt="User avatar" />
+        <img class="account-avatar__image" :src="avatarPreview" :alt="t('personAccount.avatar.previewAlt')" />
         <div>
-          <p class="account-avatar__title">Avatar</p>
-          <p class="account-avatar__hint">Choose an image that fits your public author profile.</p>
+          <p class="account-avatar__title">{{ t('personAccount.avatar.title') }}</p>
+          <p class="account-avatar__hint">{{ t('personAccount.avatar.hint') }}</p>
         </div>
       </div>
 
       <label class="btn secondary account-avatar__button" :class="{ 'is-disabled': isUploadingAvatar }">
-        {{ isUploadingAvatar ? 'Uploading...' : 'Upload Avatar' }}
+        {{ isUploadingAvatar ? t('personAccount.avatar.uploading') : t('personAccount.avatar.upload') }}
         <input
           type="file"
           accept="image/*"
@@ -55,15 +65,15 @@
       <form class="content-card field-card" @submit.prevent="submitField('nickname')">
         <div class="field-card__header">
           <div>
-            <p class="page-eyebrow">Display Name</p>
-            <h3>Nickname</h3>
+            <p class="page-eyebrow">{{ t('personAccount.fields.displayNameEyebrow') }}</p>
+            <h3>{{ t('personAccount.fields.nicknameTitle') }}</h3>
           </div>
           <button type="submit" class="secondary" :disabled="isSubmittingField === 'nickname'">
-            {{ isSubmittingField === 'nickname' ? 'Saving...' : 'Save' }}
+            {{ isSubmittingField === 'nickname' ? t('personAccount.actions.saving') : t('personAccount.actions.save') }}
           </button>
         </div>
         <label class="field-card__label" for="setting-nickname">
-          <span>Shown across your public profile and authored content</span>
+          <span>{{ t('personAccount.fields.nicknameHint') }}</span>
           <input id="setting-nickname" v-model.trim="nicknameInput" class="ui-input" type="text" maxlength="32" />
         </label>
       </form>
@@ -71,15 +81,15 @@
       <form class="content-card field-card" @submit.prevent="submitField('bio')">
         <div class="field-card__header">
           <div>
-            <p class="page-eyebrow">Public Note</p>
-            <h3>Bio</h3>
+            <p class="page-eyebrow">{{ t('personAccount.fields.publicNoteEyebrow') }}</p>
+            <h3>{{ t('personAccount.fields.bioTitle') }}</h3>
           </div>
           <button type="submit" class="secondary" :disabled="isSubmittingField === 'bio'">
-            {{ isSubmittingField === 'bio' ? 'Saving...' : 'Save' }}
+            {{ isSubmittingField === 'bio' ? t('personAccount.actions.saving') : t('personAccount.actions.save') }}
           </button>
         </div>
         <label class="field-card__label" for="setting-bio">
-          <span>A short line about what you read, make, or publish</span>
+          <span>{{ t('personAccount.fields.bioHint') }}</span>
           <textarea id="setting-bio" v-model.trim="bioInput" class="ui-textarea" rows="4" maxlength="300" />
         </label>
       </form>
@@ -89,6 +99,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { updateUserProfile, uploadAvatar } from '@/api/modules/user'
@@ -105,6 +116,7 @@ const emit = defineEmits<{
 }>()
 
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const nicknameInput = ref('')
 const bioInput = ref('')
@@ -123,11 +135,11 @@ function resetMessages(): void {
 
 function validateField(field: ProfileField, value: string): string {
   if (!value && field !== 'bio') {
-    return 'Input cannot be empty.'
+    return t('personAccount.errors.emptyInput')
   }
 
   if (field === 'bio' && value.length > 300) {
-    return 'Bio must be 300 characters or fewer.'
+    return t('personAccount.errors.bioTooLong', { max: 300 })
   }
 
   return ''
@@ -144,7 +156,7 @@ async function updateField(payload: {
 }): Promise<void> {
   const userId = authStore.currentUser?.id
   if (!userId) {
-    errorMessage.value = 'Unable to identify current user.'
+    errorMessage.value = t('personAccount.errors.missingUser')
     return
   }
 
@@ -182,12 +194,15 @@ async function submitField(field: ProfileField): Promise<void> {
       await updateField({ bio: bioInput.value.trim() })
     }
 
-    successMessage.value = `${field} updated successfully.`
+    successMessage.value =
+      field === 'nickname'
+        ? t('personAccount.success.nicknameUpdated')
+        : t('personAccount.success.bioUpdated')
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to update profile.'
+      errorMessage.value = t('personAccount.errors.updateFailed')
     }
   } finally {
     isSubmittingField.value = null
@@ -206,12 +221,12 @@ async function handleAvatarChange(event: Event): Promise<void> {
   try {
     const avatarUrl = await uploadAvatar(file)
     await updateField({ avatarUrl })
-    successMessage.value = 'avatar updated successfully.'
+    successMessage.value = t('personAccount.success.avatarUpdated')
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to upload avatar.'
+      errorMessage.value = t('personAccount.errors.uploadFailed')
     }
   } finally {
     isUploadingAvatar.value = false

@@ -1,8 +1,8 @@
 <template>
   <section class="edit-page">
     <header>
-      <h1>Edit Article</h1>
-      <p>Only the original author can edit this article.</p>
+      <h1>{{ t('edit.title') }}</h1>
+      <p>{{ t('edit.description') }}</p>
     </header>
 
     <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -22,8 +22,8 @@
         :categories="resolvedCategories"
         :tags="resolvedTags"
         :require-full-payload="true"
-        submit-text="Save Changes"
-        submitting-text="Saving..."
+        :submit-text="t('edit.actions.saveChanges')"
+        :submitting-text="t('edit.actions.saving')"
         :submitting="isSubmitting"
         :show-cancel="true"
         @submit="handleUpdate"
@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { getArticleDetail, updateArticle } from '@/api/modules/article'
@@ -47,6 +48,7 @@ import type { Article, ArticlePayload } from '@/types/article'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const article = ref<Article | null>(null)
 const isLoading = ref(false)
@@ -70,7 +72,7 @@ async function loadEditableArticle(): Promise<void> {
   article.value = null
 
   if (!articleId) {
-    errorMessage.value = 'Invalid article id.'
+    errorMessage.value = t('edit.errors.invalidId')
     return
   }
 
@@ -82,7 +84,7 @@ async function loadEditableArticle(): Promise<void> {
     const currentUserId = authStore.currentUser?.id
 
     if (!currentUserId || currentUserId !== detail.author?.id) {
-      errorMessage.value = 'You do not have permission to edit this article.'
+      errorMessage.value = t('edit.errors.noPermission')
       article.value = null
       await router.push(`/article/${articleId}`)
       return
@@ -93,7 +95,7 @@ async function loadEditableArticle(): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to load editable article.'
+      errorMessage.value = t('edit.errors.loadFailed')
     }
   } finally {
     isLoading.value = false
@@ -110,7 +112,7 @@ async function handleUpdate(payload: ArticlePayload | BasicArticleSubmitPayload)
   }
 
   if (!isArticlePayload(payload)) {
-    errorMessage.value = 'Edit form is incomplete.'
+    errorMessage.value = t('edit.errors.payloadIncomplete')
     return
   }
 
@@ -128,7 +130,7 @@ async function handleUpdate(payload: ArticlePayload | BasicArticleSubmitPayload)
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to save article changes.'
+      errorMessage.value = t('edit.errors.saveFailed')
     }
   } finally {
     isSubmitting.value = false

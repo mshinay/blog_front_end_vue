@@ -2,150 +2,146 @@
   <section class="page-shell page-shell--wide auth-page">
     <div class="auth-stage">
       <aside class="hero-surface auth-story">
-        <p class="page-eyebrow">New Account</p>
+        <p class="page-eyebrow">{{ t('registerView.story.eyebrow') }}</p>
         <div class="auth-story__header">
-          <h1>Open your author corner.</h1>
-          <p>
-            Create a profile that feels at home inside the editorial system, then publish,
-            comment, and shape your own reading identity from day one.
-          </p>
+          <h1>{{ t('registerView.story.title') }}</h1>
+          <p>{{ t('registerView.story.description') }}</p>
         </div>
 
         <div class="auth-story__highlights">
           <article class="stats-tile">
-            <span class="auth-story__label">Profile Tone</span>
-            <strong>Human, not generic</strong>
-            <p>Nickname, avatar, and short bio let your posts feel authored instead of anonymous.</p>
+            <span class="auth-story__label">{{ t('registerView.story.highlights.profileToneLabel') }}</span>
+            <strong>{{ t('registerView.story.highlights.profileToneTitle') }}</strong>
+            <p>{{ t('registerView.story.highlights.profileToneDescription') }}</p>
           </article>
           <article class="stats-tile">
-            <span class="auth-story__label">Publishing Flow</span>
-            <strong>Ready to write</strong>
-            <p>Your account feeds directly into article publishing, reading, and discussion spaces.</p>
+            <span class="auth-story__label">{{ t('registerView.story.highlights.publishingFlowLabel') }}</span>
+            <strong>{{ t('registerView.story.highlights.publishingFlowTitle') }}</strong>
+            <p>{{ t('registerView.story.highlights.publishingFlowDescription') }}</p>
           </article>
         </div>
 
         <div class="panel-grid">
           <article class="panel-card auth-story__panel">
-            <p class="page-eyebrow">Essentials</p>
-            <p>Username, email, and password are required to create your account securely.</p>
+            <p class="page-eyebrow">{{ t('registerView.story.panels.essentialsEyebrow') }}</p>
+            <p>{{ t('registerView.story.panels.essentialsDescription') }}</p>
           </article>
           <article class="panel-card auth-story__panel">
-            <p class="page-eyebrow">Optional Details</p>
-            <p>Nickname, avatar URL, and bio help your public presence feel intentional from the start.</p>
+            <p class="page-eyebrow">{{ t('registerView.story.panels.optionalEyebrow') }}</p>
+            <p>{{ t('registerView.story.panels.optionalDescription') }}</p>
           </article>
         </div>
       </aside>
 
       <form class="panel-card auth-panel" @submit.prevent="handleSubmit">
         <div class="page-header auth-panel__header">
-          <p class="page-eyebrow">Create Account</p>
-          <h2>Join the blog</h2>
-          <p>Set up your access, then continue straight into the main reading and publishing flow.</p>
+          <p class="page-eyebrow">{{ t('registerView.panel.eyebrow') }}</p>
+          <h2>{{ t('registerView.panel.title') }}</h2>
+          <p>{{ t('registerView.panel.description') }}</p>
         </div>
 
         <div class="auth-panel__grid">
           <label class="auth-field" for="register-username">
-            <span>Username</span>
+            <span>{{ t('fields.username') }}</span>
             <input
               id="register-username"
               v-model.trim="form.username"
               class="ui-input"
               type="text"
               autocomplete="username"
-              placeholder="Choose a username"
+              :placeholder="t('registerView.panel.usernamePlaceholder')"
               required
             />
           </label>
 
           <label class="auth-field" for="register-email">
-            <span>Email</span>
+            <span>{{ t('fields.email') }}</span>
             <input
               id="register-email"
               v-model.trim="form.email"
               class="ui-input"
               type="email"
               autocomplete="email"
-              placeholder="name@example.com"
+              :placeholder="t('registerView.panel.emailPlaceholder')"
               required
             />
           </label>
 
           <label class="auth-field" for="register-nickname">
-            <span>Nickname</span>
+            <span>{{ t('fields.nickname') }}</span>
             <input
               id="register-nickname"
               v-model.trim="form.nickname"
               class="ui-input"
               type="text"
               autocomplete="nickname"
-              placeholder="How readers will see you"
+              :placeholder="t('registerView.panel.nicknamePlaceholder')"
             />
           </label>
 
           <label class="auth-field" for="register-avatar">
-            <span>Avatar URL</span>
+            <span>{{ t('fields.avatarUrl') }}</span>
             <input
               id="register-avatar"
               v-model.trim="form.avatarUrl"
               class="ui-input"
               type="url"
               autocomplete="url"
-              placeholder="https://example.com/avatar.jpg"
+              :placeholder="t('registerView.panel.avatarPlaceholder')"
             />
           </label>
         </div>
 
         <label class="auth-field" for="register-bio">
-          <span>Bio</span>
+          <span>{{ t('fields.bio') }}</span>
           <textarea
             id="register-bio"
             v-model.trim="form.bio"
             class="ui-textarea"
             rows="4"
-            placeholder="Write a short note about what you read, make, or publish."
+            :placeholder="t('registerView.panel.bioPlaceholder')"
           />
         </label>
 
         <div class="auth-panel__grid">
           <label class="auth-field" for="register-password">
-            <span>Password</span>
+            <span>{{ t('fields.password') }}</span>
             <input
               id="register-password"
               v-model="form.password"
               class="ui-input"
               type="password"
               autocomplete="new-password"
-              placeholder="Create a password"
+              :placeholder="t('registerView.panel.passwordPlaceholder')"
               required
             />
           </label>
 
           <label class="auth-field" for="register-confirm-password">
-            <span>Confirm Password</span>
+            <span>{{ t('fields.confirmPassword') }}</span>
             <input
               id="register-confirm-password"
               v-model="form.confirmPassword"
               class="ui-input"
               type="password"
               autocomplete="new-password"
-              placeholder="Repeat your password"
+              :placeholder="t('registerView.panel.confirmPasswordPlaceholder')"
               required
             />
           </label>
         </div>
 
-        <p class="auth-panel__meta">
-          Required fields create the account immediately. Optional profile details can help your
-          first posts and comments feel more recognizable.
-        </p>
+        <p class="auth-panel__meta">{{ t('registerView.panel.meta') }}</p>
 
         <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
 
         <div class="auth-panel__actions">
           <button :disabled="authStore.isLoading" type="submit" class="btn-lg">
-            {{ authStore.isLoading ? 'Creating account...' : 'Create account' }}
+            {{ authStore.isLoading ? t('registerView.actions.submitting') : t('registerView.actions.submit') }}
           </button>
-          <RouterLink class="btn secondary btn-lg" to="/login">Already have an account? Log in</RouterLink>
+          <RouterLink class="btn secondary btn-lg" to="/login">
+            {{ t('registerView.actions.toLogin') }}
+          </RouterLink>
         </div>
       </form>
     </div>
@@ -155,12 +151,14 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const form = reactive({
   username: '',
@@ -177,12 +175,12 @@ async function handleSubmit(): Promise<void> {
   errorMessage.value = ''
 
   if (!form.username || !form.email || !form.password || !form.confirmPassword) {
-    errorMessage.value = 'Please fill all fields.'
+    errorMessage.value = t('registerView.errors.missingFields')
     return
   }
 
   if (form.password !== form.confirmPassword) {
-    errorMessage.value = 'Passwords do not match.'
+    errorMessage.value = t('registerView.errors.passwordMismatch')
     return
   }
 
@@ -203,7 +201,7 @@ async function handleSubmit(): Promise<void> {
       return
     }
 
-    errorMessage.value = 'Registration failed, please try again.'
+    errorMessage.value = t('registerView.errors.registerFailed')
   }
 }
 </script>

@@ -1,30 +1,36 @@
 <template>
   <section class="admin-page">
     <header>
-      <h1>Admin Comments</h1>
-      <p>Admin users can soft-delete comments. Editing stays author-only.</p>
+      <h1>{{ t('adminComments.title') }}</h1>
+      <p>{{ t('adminComments.description') }}</p>
       <form class="search-form" @submit.prevent="submitSearch">
-        <input v-model.trim="keywordInput" type="text" placeholder="Search comments" />
-        <button type="submit">Search</button>
+        <input
+          v-model.trim="keywordInput"
+          type="text"
+          :placeholder="t('adminComments.searchPlaceholder')"
+        />
+        <button type="submit">{{ t('adminComments.actions.search') }}</button>
       </form>
     </header>
 
     <div v-if="comments.length > 0" class="groups">
       <article v-for="comment in comments" :key="comment.commentId" class="group-card">
         <h3>
-          <RouterLink :to="`/article/${comment.articleId}`">{{ comment.articleTitle || 'Untitled article' }}</RouterLink>
+          <RouterLink :to="`/article/${comment.articleId}`">
+            {{ comment.articleTitle || t('adminComments.values.untitledArticle') }}
+          </RouterLink>
         </h3>
         <ul class="comment-list">
           <li class="comment-item">
             <p class="meta">
-              @{{ comment.userName || 'unknown' }}
-              <span v-if="comment.replyUserName"> reply @{{ comment.replyUserName }}</span>
+              @{{ comment.userName || t('adminComments.values.unknownUser') }}
+              <span v-if="comment.replyUserName"> {{ t('adminComments.values.reply') }} @{{ comment.replyUserName }}</span>
               · {{ comment.createdTime || '' }}
             </p>
             <p class="meta">
-              Article Status: {{ formatArticleStatus(comment.articleStatus) }}
-              · Comment Status: {{ formatCommentStatus(comment.status) }}
-              · Updated: {{ comment.updatedTime || '' }}
+              {{ t('adminComments.labels.articleStatus') }}: {{ formatArticleStatus(comment.articleStatus) }}
+              · {{ t('adminComments.labels.commentStatus') }}: {{ formatCommentStatus(comment.status) }}
+              · {{ t('adminComments.labels.updated') }}: {{ comment.updatedTime || '' }}
             </p>
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div class="content" v-html="renderMarkdown(comment.content || '')" />
@@ -34,17 +40,26 @@
               :disabled="deletingId === comment.commentId"
               @click="deleteCommentFromAdmin(comment.commentId)"
             >
-              {{ deletingId === comment.commentId ? 'Deleting...' : 'Delete' }}
+              {{
+                deletingId === comment.commentId
+                  ? t('adminComments.actions.deleting')
+                  : t('adminComments.actions.delete')
+              }}
             </button>
           </li>
         </ul>
       </article>
     </div>
 
-    <EmptyState v-else-if="!isLoading && !errorMessage" message="No admin comments found." />
-    <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+    <EmptyState v-else-if="!isLoading && !errorMessage" :message="t('adminComments.empty')" />
+    <p v-if="errorMessage" class="error-text">
+      {{ errorMessage }}
+      <button v-if="hasLoadError" type="button" class="retry-btn" @click="retryLoadMore">
+        {{ t('adminComments.actions.retry') }}
+      </button>
+    </p>
     <LoadingState v-if="isLoading" />
-    <p v-if="allLoaded && comments.length > 0" class="end-text">No more comments.</p>
+    <p v-if="allLoaded && comments.length > 0" class="end-text">{{ t('adminComments.end') }}</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
@@ -52,6 +67,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { deleteComment, getAdminCommentList } from '@/api/modules/comment'
@@ -64,6 +80,7 @@ import { renderMarkdown } from '@/utils/markdown'
 const route = useRoute()
 const router = useRouter()
 const pageSize = 10
+const { t } = useI18n()
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
@@ -72,33 +89,34 @@ const page = ref(1)
 const isLoading = ref(false)
 const allLoaded = ref(false)
 const errorMessage = ref('')
+const hasLoadError = ref(false)
 const deletingId = ref<number | null>(null)
 const sentinelRef = ref<HTMLElement | null>(null)
 
-const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
+const observerEnabled = computed(() => !isLoading.value && !allLoaded.value && !hasLoadError.value)
 
 function formatArticleStatus(status: AdminCommentItem['articleStatus']): string {
   if (status === 0) {
-    return 'Draft'
+    return t('adminComments.statuses.articleDraft')
   }
 
   if (status === 1) {
-    return 'Published'
+    return t('adminComments.statuses.articlePublished')
   }
 
-  return 'Deleted'
+  return t('adminComments.statuses.articleDeleted')
 }
 
 function formatCommentStatus(status: AdminCommentItem['status']): string {
   if (status === 0) {
-    return 'Hidden'
+    return t('adminComments.statuses.commentHidden')
   }
 
   if (status === 1) {
-    return 'Normal'
+    return t('adminComments.statuses.commentNormal')
   }
 
-  return 'Deleted'
+  return t('adminComments.statuses.commentDeleted')
 }
 
 function resetState(): void {
@@ -106,6 +124,17 @@ function resetState(): void {
   page.value = 1
   allLoaded.value = false
   errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function clearLoadError(): void {
+  errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function retryLoadMore(): void {
+  clearLoadError()
+  void loadMore()
 }
 
 function buildAdminCommentQuery(currentPage: number) {
@@ -117,12 +146,12 @@ function buildAdminCommentQuery(currentPage: number) {
 }
 
 async function loadMore(): Promise<void> {
-  if (isLoading.value || allLoaded.value) {
+  if (isLoading.value || allLoaded.value || hasLoadError.value) {
     return
   }
 
   isLoading.value = true
-  errorMessage.value = ''
+  clearLoadError()
 
   try {
     const result = await getAdminCommentList(buildAdminCommentQuery(page.value))
@@ -136,10 +165,11 @@ async function loadMore(): Promise<void> {
     comments.value.push(...records)
     page.value += 1
   } catch (error) {
+    hasLoadError.value = true
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to load admin comments.'
+      errorMessage.value = t('adminComments.errors.loadFailed')
     }
   } finally {
     isLoading.value = false
@@ -175,7 +205,7 @@ async function syncKeyword(): Promise<void> {
 }
 
 async function deleteCommentFromAdmin(commentId: number): Promise<void> {
-  if (!confirm('Delete this comment?')) {
+  if (!confirm(t('adminComments.confirmDelete'))) {
     return
   }
 
@@ -189,7 +219,7 @@ async function deleteCommentFromAdmin(commentId: number): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to delete comment.'
+      errorMessage.value = t('adminComments.errors.deleteFailed')
     }
   } finally {
     deletingId.value = null
@@ -318,6 +348,16 @@ h3 a {
   border-radius: 12px;
   background: #fff2f2;
   padding: 0.75rem;
+}
+
+.retry-btn {
+  margin-left: 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-text);
+  color: var(--color-surface);
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
 }
 
 .end-text {

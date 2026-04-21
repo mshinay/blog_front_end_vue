@@ -2,36 +2,33 @@
   <section class="search-page page-shell page-shell--wide">
     <header class="hero-surface search-hero">
       <div class="search-hero__intro page-header">
-        <span class="page-eyebrow">Discovery</span>
-        <h1>Find the next article worth your attention.</h1>
-        <p>
-          Search stays lightweight, but the experience now gives clearer context for what you are
-          looking for and what the current result set is telling you.
-        </p>
+        <span class="page-eyebrow">{{ t('search.heroEyebrow') }}</span>
+        <h1>{{ t('search.heroTitle') }}</h1>
+        <p>{{ t('search.heroDescription') }}</p>
       </div>
 
       <div class="panel-card search-panel">
         <form class="search-form" @submit.prevent="submitSearch">
-          <label class="search-form__label" for="search-keyword">Search by keyword</label>
+          <label class="search-form__label" for="search-keyword">{{ t('search.formLabel') }}</label>
           <div class="search-form__controls">
             <input
               id="search-keyword"
               v-model.trim="keywordInput"
               class="ui-input ui-input--lg"
               type="text"
-              placeholder="Try a topic, framework, or writing idea"
+              :placeholder="t('search.inputPlaceholder')"
             />
-            <button type="submit" class="btn btn-lg">Search</button>
+            <button type="submit" class="btn btn-lg">{{ t('search.submit') }}</button>
           </div>
         </form>
 
         <dl class="search-stats">
           <div class="stats-tile">
-            <dt>Query</dt>
-            <dd>{{ activeKeyword || 'Ready' }}</dd>
+            <dt>{{ t('search.statsQuery') }}</dt>
+            <dd>{{ activeKeyword || t('search.statsReady') }}</dd>
           </div>
           <div class="stats-tile">
-            <dt>Loaded</dt>
+            <dt>{{ t('search.statsLoaded') }}</dt>
             <dd>{{ results.length }}</dd>
           </div>
         </dl>
@@ -47,16 +44,16 @@
 
       <EmptyState
         v-if="!activeKeyword && !isLoading"
-        eyebrow="Start Here"
-        title="Search becomes the page focal point instead of an empty utility row."
-        message="Enter a keyword above to explore articles by topic, framework, or phrase."
+        :eyebrow="t('search.startEyebrow')"
+        :title="t('search.startTitle')"
+        :message="t('search.startMessage')"
       />
 
       <LoadingState
         v-else-if="isLoading && results.length === 0"
-        eyebrow="Searching"
-        title="Looking through the article archive."
-        message="Results will appear here as soon as the first page comes back."
+        :eyebrow="t('search.searchingEyebrow')"
+        :title="t('search.searchingTitle')"
+        :message="t('search.searchingMessage')"
       />
 
       <div v-else-if="results.length > 0" class="search-feed surface-stack">
@@ -87,29 +84,29 @@
 
       <EmptyState
         v-else-if="activeKeyword && !errorMessage"
-        eyebrow="No Matches"
-        title="No results found for this search yet."
+        :eyebrow="t('search.noMatchesEyebrow')"
+        :title="t('search.noMatchesTitle')"
         :message="emptyResultMessage"
       />
 
       <p v-if="errorMessage" class="error-text">
         {{ errorMessage }}
         <button v-if="hasLoadError" type="button" class="secondary btn-sm" @click="retryLoadMore">
-          Retry
+          {{ t('common.retry') }}
         </button>
       </p>
 
       <LoadingState
         v-if="isLoading && results.length > 0"
         class="search-results__loading"
-        eyebrow="More Results"
-        title="Loading another page of articles."
-        message="The existing list stays in place while more results are fetched."
+        :eyebrow="t('search.moreResultsEyebrow')"
+        :title="t('search.moreResultsTitle')"
+        :message="t('search.moreResultsMessage')"
         compact
       />
 
       <p v-if="allLoaded && results.length > 0" class="end-text">
-        You have reached the end of the results for "{{ activeKeyword }}".
+        {{ t('search.endOfResults', { keyword: activeKeyword }) }}
       </p>
 
       <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
@@ -120,6 +117,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { getArticleList } from '@/api/modules/article'
@@ -131,6 +129,7 @@ import type { ArticleListItem } from '@/types/article'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
@@ -151,31 +150,34 @@ const primaryResults = computed(() => results.value.slice(1, 3))
 const secondaryResults = computed(() => results.value.slice(3))
 const resultEyebrow = computed(() => {
   if (!activeKeyword.value) {
-    return 'Search Studio'
+    return t('search.resultEyebrowIdle')
   }
 
-  return `${results.value.length} loaded for "${activeKeyword.value}"`
+  return t('search.resultEyebrowActive', {
+    count: results.value.length,
+    keyword: activeKeyword.value,
+  })
 })
 const resultTitle = computed(() => {
   if (!activeKeyword.value) {
-    return 'Explore the archive with a direct, dedicated search tool.'
+    return t('search.resultTitleIdle')
   }
 
-  return `Results for "${activeKeyword.value}"`
+  return t('search.resultTitleActive', { keyword: activeKeyword.value })
 })
 const resultDescription = computed(() => {
   if (!activeKeyword.value) {
-    return 'The query state, result rhythm, and empty states all live in the same editorial system as the homepage.'
+    return t('search.resultDescriptionIdle')
   }
 
   if (results.value.length > 0) {
-    return 'The first match gets a stronger lead treatment, while the remaining results keep a steady reading rhythm.'
+    return t('search.resultDescriptionWithMatches')
   }
 
-  return 'No matching articles have appeared yet, but the page still keeps the query context visible and intentional.'
+  return t('search.resultDescriptionNoMatches')
 })
 const emptyResultMessage = computed(
-  () => `Try refining "${activeKeyword.value}" with a broader phrase or a related topic.`,
+  () => t('search.noMatchesMessage', { keyword: activeKeyword.value }),
 )
 
 function resetPagination(): void {
@@ -222,7 +224,7 @@ async function loadMore(): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Search request failed.'
+      errorMessage.value = t('search.requestFailed')
     }
   } finally {
     isLoading.value = false

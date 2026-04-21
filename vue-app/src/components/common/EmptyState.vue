@@ -2,7 +2,7 @@
   <section class="empty-state panel-card" :class="{ 'empty-state--compact': compact }">
     <span v-if="eyebrow" class="page-eyebrow">{{ eyebrow }}</span>
     <h2 v-if="resolvedTitle">{{ resolvedTitle }}</h2>
-    <p>{{ message }}</p>
+    <p>{{ resolvedMessage }}</p>
     <div v-if="$slots.action" class="empty-state__action">
       <slot name="action" />
     </div>
@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 import { computed, useSlots } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = withDefaults(
   defineProps<{
@@ -22,14 +23,21 @@ const props = withDefaults(
   {
     eyebrow: '',
     title: '',
-    message: 'No data yet.',
+    message: '',
     compact: false,
   },
 )
 
 useSlots()
 
-const resolvedTitle = computed(() => props.title || (!props.eyebrow ? 'Nothing here yet.' : ''))
+const { t } = useI18n()
+
+const resolvedTitle = computed(() => {
+  if (props.title) return props.title
+  return props.eyebrow ? '' : t('states.emptyTitle')
+})
+
+const resolvedMessage = computed(() => props.message || t('states.emptyMessage'))
 </script>
 
 <style scoped>

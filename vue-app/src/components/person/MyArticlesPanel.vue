@@ -1,25 +1,25 @@
 <template>
   <section class="panel-card articles-panel">
     <div class="page-header">
-      <p class="page-eyebrow">Writing Shelf</p>
-      <h2>My Articles</h2>
-      <p>Review what you have published, search your own writing, and jump into edit or delete actions.</p>
+      <p class="page-eyebrow">{{ t('personArticles.header.eyebrow') }}</p>
+      <h2>{{ t('personArticles.header.title') }}</h2>
+      <p>{{ t('personArticles.header.description') }}</p>
     </div>
 
     <form class="content-card articles-search" @submit.prevent="submitSearch">
       <label class="articles-search__field" for="person-article-search">
-        <span>Search your articles</span>
+        <span>{{ t('personArticles.search.label') }}</span>
         <input
           id="person-article-search"
           v-model.trim="keywordInput"
           class="ui-input"
           type="text"
-          placeholder="Search your articles"
+          :placeholder="t('personArticles.search.placeholder')"
         />
       </label>
       <div class="articles-search__actions">
-        <button type="submit">Search</button>
-        <button type="button" class="secondary" @click="resetSearch">Reset</button>
+        <button type="submit">{{ t('personArticles.search.submit') }}</button>
+        <button type="button" class="secondary" @click="resetSearch">{{ t('personArticles.search.reset') }}</button>
       </div>
     </form>
 
@@ -30,18 +30,20 @@
             <RouterLink class="article-item__title" :to="`/article/${article.id}`">{{ article.title }}</RouterLink>
             <p class="article-item__summary">{{ resolveSummary(article.summary) }}</p>
           </div>
-          <span class="ui-pill ui-pill--status">{{ article.publishTime ?? 'Draft time unavailable' }}</span>
+          <span class="ui-pill ui-pill--status">
+            {{ article.publishTime ?? t('personArticles.item.draftTimeUnavailable') }}
+          </span>
         </div>
 
         <div class="article-item__footer">
-          <p class="article-item__meta">Published writing stays visible here for quick maintenance and revisits.</p>
+          <p class="article-item__meta">{{ t('personArticles.item.meta') }}</p>
           <div class="article-item__actions">
             <RouterLink
               v-if="canEditArticle(authStore.currentUser, article)"
               class="btn secondary"
               :to="`/edit-article/${article.id}`"
             >
-              Edit
+              {{ t('personArticles.item.edit') }}
             </RouterLink>
             <button
               v-if="canDeleteArticle(authStore.currentUser, article)"
@@ -50,7 +52,7 @@
               :disabled="deletingId === article.id"
               @click="deleteOwnedArticle(article.id)"
             >
-              {{ deletingId === article.id ? 'Deleting...' : 'Delete' }}
+              {{ deletingId === article.id ? t('personArticles.item.deleting') : t('personArticles.item.delete') }}
             </button>
           </div>
         </div>
@@ -59,23 +61,26 @@
 
     <EmptyState
       v-else-if="!isLoading && !errorMessage"
-      eyebrow="Nothing Published"
-      title="Your writing shelf is empty."
-      message="Once you publish articles, they will appear here for maintenance and quick access."
+      :eyebrow="t('personArticles.empty.eyebrow')"
+      :title="t('personArticles.empty.title')"
+      :message="t('personArticles.empty.message')"
     />
     <p v-if="errorMessage" class="error-text">
       {{ errorMessage }}
-      <button v-if="hasLoadError" type="button" class="secondary btn-sm" @click="retryLoadMore">Retry</button>
+      <button v-if="hasLoadError" type="button" class="secondary btn-sm" @click="retryLoadMore">
+        {{ t('common.retry') }}
+      </button>
     </p>
     <LoadingState v-if="isLoading" />
 
-    <p v-if="allLoaded && articles.length > 0" class="muted-text articles-panel__end">No more articles.</p>
+    <p v-if="allLoaded && articles.length > 0" class="muted-text articles-panel__end">{{ t('personArticles.end') }}</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { deleteArticle, getArticleList } from '@/api/modules/article'
@@ -87,6 +92,7 @@ import type { ArticleListItem } from '@/types/article'
 import { canDeleteArticle, canEditArticle } from '@/utils/permissions'
 
 const authStore = useAuthStore()
+const { t } = useI18n()
 const pageSize = 10
 
 const keywordInput = ref('')
@@ -125,7 +131,7 @@ function resolveSummary(summary?: string): string {
     return summary
   }
 
-  return 'No summary available.'
+  return t('personArticles.item.noSummary')
 }
 
 function buildArticleQuery(authorId: number, currentPage: number) {
@@ -140,7 +146,7 @@ function buildArticleQuery(authorId: number, currentPage: number) {
 async function loadMore(): Promise<void> {
   const userId = authStore.currentUser?.id
   if (!userId) {
-    errorMessage.value = 'Please log in to view your articles.'
+    errorMessage.value = t('personArticles.errors.loginRequired')
     allLoaded.value = true
     return
   }
@@ -167,7 +173,7 @@ async function loadMore(): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to load your articles.'
+      errorMessage.value = t('personArticles.errors.loadFailed')
     }
   } finally {
     isLoading.value = false
@@ -188,7 +194,7 @@ function resetSearch(): void {
 }
 
 async function deleteOwnedArticle(articleId: number): Promise<void> {
-  if (!confirm('Delete this article?')) {
+  if (!confirm(t('personArticles.confirm.delete'))) {
     return
   }
 
@@ -201,7 +207,7 @@ async function deleteOwnedArticle(articleId: number): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to delete article.'
+      errorMessage.value = t('personArticles.errors.deleteFailed')
     }
   } finally {
     deletingId.value = null

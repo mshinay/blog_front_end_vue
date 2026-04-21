@@ -1,8 +1,8 @@
 <template>
   <section class="upload-page">
     <header>
-      <h1>Create Article</h1>
-      <p>Write in Markdown with split preview mode.</p>
+      <h1>{{ t('upload.title') }}</h1>
+      <p>{{ t('upload.description') }}</p>
     </header>
 
     <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
@@ -12,8 +12,8 @@
         :categories="categories"
         :tags="tags"
         :require-full-payload="true"
-        submit-text="Publish"
-        submitting-text="Publishing..."
+        :submit-text="t('upload.actions.publish')"
+        :submitting-text="t('upload.actions.publishing')"
         :loading="isBootstrapping"
         :submitting="isSubmitting"
         @submit="handlePublish"
@@ -25,6 +25,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { createArticle } from '@/api/modules/article'
@@ -41,6 +42,7 @@ interface BasicArticleSubmitPayload {
 }
 
 const router = useRouter()
+const { t } = useI18n()
 const categories = ref<CategoryListItem[]>([])
 const tags = ref<TagListItem[]>([])
 const isBootstrapping = ref(false)
@@ -59,7 +61,7 @@ async function loadEditorOptions(): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to load category and tag options.'
+      errorMessage.value = t('upload.errors.loadOptionsFailed')
     }
   } finally {
     isBootstrapping.value = false
@@ -72,7 +74,7 @@ function isArticlePayload(payload: ArticlePayload | BasicArticleSubmitPayload): 
 
 async function handlePublish(payload: ArticlePayload | BasicArticleSubmitPayload): Promise<void> {
   if (!isArticlePayload(payload)) {
-    errorMessage.value = 'Publish form is incomplete.'
+    errorMessage.value = t('upload.errors.payloadIncomplete')
     return
   }
 
@@ -86,12 +88,12 @@ async function handlePublish(payload: ArticlePayload | BasicArticleSubmitPayload
       return
     }
 
-    errorMessage.value = 'Publish succeeded but article id is invalid.'
+    errorMessage.value = t('upload.errors.publishInvalidId')
   } catch (error) {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to publish article.'
+      errorMessage.value = t('upload.errors.publishFailed')
     }
   } finally {
     isSubmitting.value = false

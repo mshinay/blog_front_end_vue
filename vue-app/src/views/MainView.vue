@@ -1,21 +1,18 @@
 <template>
   <section class="main-page page-shell page-shell--wide">
     <p v-if="route.query.denied === 'admin'" class="notice-card">
-      Admin access is required for that page.
+      {{ t('main.deniedAdmin') }}
     </p>
 
     <section class="hero-section hero-surface">
       <div class="hero-section__intro">
-        <span class="page-eyebrow">Editorial Front Page</span>
-        <h1>Latest Articles</h1>
-        <p>
-          A calmer reading surface for fresh writing, thoughtful browsing, and a feed that feels
-          curated instead of mechanical.
-        </p>
+        <span class="page-eyebrow">{{ t('main.heroEyebrow') }}</span>
+        <h1>{{ t('main.heroTitle') }}</h1>
+        <p>{{ t('main.heroDescription') }}</p>
 
         <div class="hero-section__actions">
-          <RouterLink class="btn" to="/search">Explore the archive</RouterLink>
-          <RouterLink class="btn secondary" to="/upload">Write a new post</RouterLink>
+          <RouterLink class="btn" to="/search">{{ t('main.heroExplore') }}</RouterLink>
+          <RouterLink class="btn secondary" to="/upload">{{ t('main.heroWrite') }}</RouterLink>
         </div>
 
         <div class="hero-section__stats panel-grid">
@@ -34,21 +31,18 @@
           variant="featured"
         />
         <div v-else class="content-card hero-section__placeholder">
-          <span class="page-eyebrow">Loading the front page</span>
-          <h2>The next featured story will appear here.</h2>
-          <p>
-            We keep this space ready for the newest article in the feed, without changing the
-            backend loading flow behind it.
-          </p>
+          <span class="page-eyebrow">{{ t('main.featureLoadingEyebrow') }}</span>
+          <h2>{{ t('main.featureLoadingTitle') }}</h2>
+          <p>{{ t('main.featureLoadingDescription') }}</p>
         </div>
       </div>
     </section>
 
     <section class="feed-section page-section">
       <header class="page-header feed-section__header">
-        <span class="page-eyebrow">Reading Queue</span>
-        <h2>From the latest dispatches to the rest of the feed</h2>
-        <p>Featured stories lead the page, while the feed below keeps its original infinite scroll behavior.</p>
+        <span class="page-eyebrow">{{ t('main.feedEyebrow') }}</span>
+        <h2>{{ t('main.feedTitle') }}</h2>
+        <p>{{ t('main.feedDescription') }}</p>
       </header>
 
       <div v-if="remainingArticles.length > 0" class="article-list">
@@ -63,7 +57,7 @@
 
       <EmptyState
         v-else-if="!isLoading && !errorMessage && !featuredArticle"
-        message="No articles available right now."
+        :message="t('main.emptyMessage')"
       />
 
       <p v-if="errorMessage" class="error-text">
@@ -74,14 +68,14 @@
           class="btn secondary btn-sm retry-btn"
           @click="retryLoadMoreArticles"
         >
-          Retry
+          {{ t('common.retry') }}
         </button>
       </p>
 
       <LoadingState v-if="isLoading" />
 
       <p v-if="allLoaded && articles.length > 0" class="end-text">
-        You have reached the end of the current editorial queue.
+        {{ t('main.endOfFeed') }}
       </p>
       <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
     </section>
@@ -91,6 +85,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { getArticleList } from '@/api/modules/article'
@@ -100,6 +95,7 @@ import LoadingState from '@/components/common/LoadingState.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 import type { ArticleListItem } from '@/types/article'
 
+const { t } = useI18n()
 const route = useRoute()
 
 const page = ref(1)
@@ -138,19 +134,19 @@ const loadedTopicCount = computed(() => {
 })
 const heroStats = computed(() => [
   {
-    label: 'Stories loaded',
+    label: t('main.statStoriesLabel'),
     value: String(articles.value.length),
-    description: 'Live from the current feed window',
+    description: t('main.statStoriesDescription'),
   },
   {
-    label: 'Categories in view',
+    label: t('main.statCategoriesLabel'),
     value: String(loadedCategoryCount.value),
-    description: 'A broader mix feels more editorial',
+    description: t('main.statCategoriesDescription'),
   },
   {
-    label: 'Topics surfaced',
+    label: t('main.statTopicsLabel'),
     value: String(loadedTopicCount.value),
-    description: 'Tags create the visible rhythm of the homepage',
+    description: t('main.statTopicsDescription'),
   },
 ])
 
@@ -217,7 +213,7 @@ async function loadMoreArticles(): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to load articles.'
+      errorMessage.value = t('errors.loadArticlesFailed')
     }
   } finally {
     isLoading.value = false

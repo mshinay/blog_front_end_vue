@@ -16,12 +16,14 @@
             <div class="article-meta panel-card">
               <div class="article-meta__lead">
                 <p class="article-author">
-                  Written by
+                  {{ t('articleDetail.writtenBy') }}
                   <RouterLink :to="authorProfileLink">{{ authorDisplayName }}</RouterLink>
                 </p>
                 <p class="article-meta__dates">
-                  <span v-if="publishLabel">{{ publishLabel }}</span>
-                  <span v-if="article.updatedTime">Updated {{ article.updatedTime }}</span>
+                  <span v-if="publishLabel">{{ t('articleDetail.published', { date: publishLabel }) }}</span>
+                  <span v-if="article.updatedTime">
+                    {{ t('articleDetail.updated', { date: article.updatedTime }) }}
+                  </span>
                 </p>
               </div>
 
@@ -30,10 +32,12 @@
                   {{ article.category.name }}
                 </span>
                 <span v-if="article.wordCount" class="pill ui-pill--status">
-                  {{ article.wordCount }} words
+                  {{ t('articleDetail.wordCount', { count: article.wordCount }) }}
                 </span>
                 <span class="pill ui-pill--status">
-                  {{ isCommentEnabled ? 'Comments open' : 'Comments closed' }}
+                  {{
+                    isCommentEnabled ? t('articleDetail.commentsOpen') : t('articleDetail.commentsClosed')
+                  }}
                 </span>
                 <span
                   v-for="tag in article.tags ?? []"
@@ -48,9 +52,9 @@
 
           <aside class="article-hero__aside">
             <div class="panel-card article-actions">
-              <p class="article-actions__eyebrow page-eyebrow">Manage</p>
+              <p class="article-actions__eyebrow page-eyebrow">{{ t('articleDetail.manage') }}</p>
               <p class="article-actions__copy">
-                Keep article actions nearby without pulling focus away from the reading flow.
+                {{ t('articleDetail.manageDescription') }}
               </p>
               <div class="article-actions__buttons">
                 <RouterLink
@@ -58,7 +62,7 @@
                   class="btn secondary btn-sm"
                   :to="`/edit-article/${article.id}`"
                 >
-                  Edit Article
+                  {{ t('articleDetail.editArticle') }}
                 </RouterLink>
                 <button
                   v-if="canDeleteArticlePermission"
@@ -67,26 +71,26 @@
                   :disabled="isDeleting"
                   @click="handleDeleteArticle"
                 >
-                  {{ isDeleting ? 'Deleting...' : 'Delete Article' }}
+                  {{ isDeleting ? t('articleDetail.deleting') : t('articleDetail.deleteArticle') }}
                 </button>
               </div>
             </div>
 
             <dl class="article-stats">
               <div class="stats-tile">
-                <dt>Views</dt>
+                <dt>{{ t('articleDetail.views') }}</dt>
                 <dd>{{ article.stats?.viewCount ?? 0 }}</dd>
               </div>
               <div class="stats-tile">
-                <dt>Likes</dt>
+                <dt>{{ t('articleDetail.likes') }}</dt>
                 <dd>{{ article.stats?.likeCount ?? 0 }}</dd>
               </div>
               <div class="stats-tile">
-                <dt>Comments</dt>
+                <dt>{{ t('articleDetail.comments') }}</dt>
                 <dd>{{ article.stats?.commentCount ?? 0 }}</dd>
               </div>
               <div class="stats-tile">
-                <dt>Favorites</dt>
+                <dt>{{ t('articleDetail.favorites') }}</dt>
                 <dd>{{ article.stats?.favoriteCount ?? 0 }}</dd>
               </div>
             </dl>
@@ -101,16 +105,13 @@
 
       <section class="panel-card article-comments">
         <div class="page-header article-comments__header">
-          <span class="page-eyebrow">Discussion</span>
-          <h2>Join the conversation around this piece.</h2>
-          <p>
-            Reader responses stay attached to the article surface, with clear separation from the
-            long-form reading column.
-          </p>
+          <span class="page-eyebrow">{{ t('articleDetail.discussionEyebrow') }}</span>
+          <h2>{{ t('articleDetail.discussionTitle') }}</h2>
+          <p>{{ t('articleDetail.discussionDescription') }}</p>
         </div>
 
         <p v-if="!isCommentEnabled" class="notice-card">
-          Comments are disabled for this article.
+          {{ t('articleDetail.commentsDisabled') }}
         </p>
         <CommentList v-else :article-id="article.id" embedded />
       </section>
@@ -121,6 +122,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { deleteArticle, getArticleDetail } from '@/api/modules/article'
@@ -133,6 +135,7 @@ import { renderMarkdown } from '@/utils/markdown'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const article = ref<Article | null>(null)
@@ -152,11 +155,14 @@ const articlePermissionTarget = computed<ArticlePermissionTarget | null>(() => {
 })
 const articleHtml = computed(() => renderMarkdown(article.value?.content))
 const authorDisplayName = computed(
-  () => article.value?.author?.nickname || article.value?.author?.username || 'Unknown author',
+  () =>
+    article.value?.author?.nickname ||
+    article.value?.author?.username ||
+    t('articleDetail.unknownAuthor'),
 )
 const authorProfileLink = computed(() => `/user/${article.value?.author?.id ?? ''}`)
 const isCommentEnabled = computed(() => article.value?.allowComment === 1)
-const categoryLabel = computed(() => article.value?.category?.name || 'Editorial reading')
+const categoryLabel = computed(() => article.value?.category?.name || t('articleDetail.categoryFallback'))
 const publishLabel = computed(() => article.value?.publishTime || article.value?.createTime || '')
 const canEditArticlePermission = computed(() =>
   canEditArticle(authStore.currentUser, articlePermissionTarget.value as Article | null),
@@ -170,7 +176,7 @@ async function loadArticleDetail(): Promise<void> {
   article.value = null
 
   if (!articleId) {
-    errorMessage.value = 'Missing article id.'
+    errorMessage.value = t('articleDetail.missingArticleId')
     return
   }
 
@@ -183,7 +189,7 @@ async function loadArticleDetail(): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to load article detail.'
+      errorMessage.value = t('articleDetail.loadFailed')
     }
   } finally {
     isLoading.value = false
@@ -195,7 +201,7 @@ async function handleDeleteArticle(): Promise<void> {
     return
   }
 
-  if (!confirm('Are you sure you want to delete this article?')) {
+  if (!confirm(t('articleDetail.deleteConfirm'))) {
     return
   }
 
@@ -209,7 +215,7 @@ async function handleDeleteArticle(): Promise<void> {
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
-      errorMessage.value = 'Failed to delete article.'
+      errorMessage.value = t('articleDetail.deleteFailed')
     }
   } finally {
     isDeleting.value = false

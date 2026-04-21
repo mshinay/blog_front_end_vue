@@ -3,20 +3,20 @@
     <p v-if="profileError" class="error-text">{{ profileError }}</p>
 
     <header v-else-if="userProfile" class="profile-card">
-      <img :src="userProfile.avatarUrl || '/vite.svg'" alt="User avatar" />
+      <img :src="userProfile.avatarUrl || '/vite.svg'" :alt="t('userPage.avatarAlt')" />
       <div>
         <h1>{{ userProfile.nickname || userProfile.username }}</h1>
         <p class="username">@{{ userProfile.username }}</p>
-        <p>{{ userProfile.bio || 'This user has not added a bio yet.' }}</p>
+        <p>{{ userProfile.bio || t('userPage.bioFallback') }}</p>
       </div>
     </header>
 
     <LoadingState v-else-if="isProfileLoading" />
 
     <form class="search-form" @submit.prevent="submitSearch">
-      <input v-model.trim="keywordInput" type="text" placeholder="Search this user's articles" />
-      <button type="submit">Search</button>
-      <button type="button" class="ghost" @click="resetSearch">Reset</button>
+      <input v-model.trim="keywordInput" type="text" :placeholder="t('userPage.searchPlaceholder')" />
+      <button type="submit">{{ t('userPage.actions.search') }}</button>
+      <button type="button" class="ghost" @click="resetSearch">{{ t('userPage.actions.reset') }}</button>
     </form>
 
     <div v-if="articles.length > 0" class="article-list">
@@ -25,13 +25,23 @@
 
     <EmptyState
       v-else-if="!isArticleLoading && !articleError"
-      message="No public articles found for this user."
+      :message="t('userPage.empty')"
     />
 
-    <p v-if="articleError" class="error-text">{{ articleError }}</p>
+    <p v-if="articleError" class="error-text">
+      {{ articleError }}
+      <button
+        v-if="hasArticleLoadError"
+        type="button"
+        class="retry-btn"
+        @click="retryLoadMoreArticles"
+      >
+        {{ t('common.retry') }}
+      </button>
+    </p>
     <LoadingState v-if="isArticleLoading" />
 
-    <p v-if="allLoaded && articles.length > 0" class="end-text">No more articles.</p>
+    <p v-if="allLoaded && articles.length > 0" class="end-text">{{ t('userPage.end') }}</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
@@ -39,6 +49,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { AppError } from '@/api/client'
 import { getUserArticleList, searchUserArticles } from '@/api/modules/article'
@@ -51,6 +62,7 @@ import type { Article } from '@/types/article'
 import type { UserProfile } from '@/types/user'
 
 const route = useRoute()
+const { t } = useI18n()
 
 const userProfile = ref<UserProfile | null>(null)
 const isProfileLoading = ref(false)
@@ -64,9 +76,12 @@ const pageSize = 10
 const isArticleLoading = ref(false)
 const allLoaded = ref(false)
 const articleError = ref('')
+const hasArticleLoadError = ref(false)
 const sentinelRef = ref<HTMLElement | null>(null)
 
-const observerEnabled = computed(() => !isArticleLoading.value && !allLoaded.value)
+const observerEnabled = computed(
+  () => !isArticleLoading.value && !allLoaded.value && !hasArticleLoadError.value,
+)
 const routeUserId = computed(() => Number(route.params.userId))
 
 function resetArticleState(): void {
@@ -74,12 +89,23 @@ function resetArticleState(): void {
   page.value = 1
   allLoaded.value = false
   articleError.value = ''
+  hasArticleLoadError.value = false
+}
+
+function clearArticleLoadError(): void {
+  articleError.value = ''
+  hasArticleLoadError.value = false
+}
+
+function retryLoadMoreArticles(): void {
+  clearArticleLoadError()
+  void loadMoreArticles()
 }
 
 function ensureValidRouteUserId(): number | null {
   const currentId = routeUserId.value
   if (!Number.isInteger(currentId) || currentId <= 0) {
-    profileError.value = 'Invalid user id.'
+    profileError.value = t('userPage.errors.invalidUserId')
     allLoaded.value = true
     return null
   }
@@ -101,7 +127,7 @@ async function loadUserProfile(): Promise<void> {
     if (error instanceof AppError) {
       profileError.value = error.message
     } else {
-      profileError.value = 'Failed to load user profile.'
+      profileError.value = t('userPage.errors.loadProfileFailed')
     }
   } finally {
     isProfileLoading.value = false
@@ -110,12 +136,12 @@ async function loadUserProfile(): Promise<void> {
 
 async function loadMoreArticles(): Promise<void> {
   const userId = ensureValidRouteUserId()
-  if (!userId || isArticleLoading.value || allLoaded.value) {
+  if (!userId || isArticleLoading.value || allLoaded.value || hasArticleLoadError.value) {
     return
   }
 
   isArticleLoading.value = true
-  articleError.value = ''
+  clearArticleLoadError()
   try {
     const result = activeKeyword.value
       ? await searchUserArticles(userId, activeKeyword.value, page.value, pageSize)
@@ -130,10 +156,11 @@ async function loadMoreArticles(): Promise<void> {
     articles.value.push(...records)
     page.value += 1
   } catch (error) {
+    hasArticleLoadError.value = true
     if (error instanceof AppError) {
       articleError.value = error.message
     } else {
-      articleError.value = 'Failed to load user articles.'
+      articleError.value = t('userPage.errors.loadArticlesFailed')
     }
   } finally {
     isArticleLoading.value = false
@@ -249,6 +276,16 @@ h1 {
   border-radius: 10px;
   background: #fff2f2;
   padding: 0.6rem 0.75rem;
+}
+
+.retry-btn {
+  margin-left: 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-text);
+  color: var(--color-surface);
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
 }
 
 .end-text {
