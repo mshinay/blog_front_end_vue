@@ -1,25 +1,46 @@
 <template>
-  <section class="panel">
-    <header>
+  <section class="panel-card account-panel">
+    <div class="page-header account-panel__header">
+      <p class="page-eyebrow">Profile Studio</p>
       <h2>Account Settings</h2>
-      <p>Keep your profile details current.</p>
-    </header>
+      <p>Keep your public author details current so comments and articles feel recognizably yours.</p>
+    </div>
 
-    <section v-if="profile" class="profile-summary">
-      <img class="summary-avatar" :src="profile.avatarUrl || '/vite.svg'" alt="Profile avatar" />
-      <div>
-        <p class="summary-name">{{ profile.nickname || profile.username }}</p>
-        <p class="summary-username">@{{ profile.username }}</p>
-        <p class="summary-bio">{{ profile.bio || 'No bio yet.' }}</p>
+    <section v-if="profile" class="content-card account-summary">
+      <img class="account-summary__avatar" :src="profile.avatarUrl || '/vite.svg'" alt="Profile avatar" />
+      <div class="account-summary__copy">
+        <p class="account-summary__name">{{ profile.nickname || profile.username }}</p>
+        <p class="account-summary__username">@{{ profile.username }}</p>
+        <p class="account-summary__bio">{{ profile.bio || 'No bio yet.' }}</p>
       </div>
     </section>
+
+    <div class="panel-grid">
+      <article class="stats-tile">
+        <span class="account-panel__label">Profile photo</span>
+        <strong>{{ authStore.currentUser?.avatarUrl ? 'Set' : 'Missing' }}</strong>
+        <p>Upload an avatar so your profile and discussion presence feel easier to recognize.</p>
+      </article>
+      <article class="stats-tile">
+        <span class="account-panel__label">Bio length</span>
+        <strong>{{ bioInput.trim().length }}</strong>
+        <p>Short, specific bios work best here. The limit stays at 300 characters.</p>
+      </article>
+    </div>
 
     <p v-if="successMessage" class="success-text">{{ successMessage }}</p>
     <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
 
-    <div class="avatar-section">
-      <img class="avatar" :src="avatarPreview" alt="User avatar" />
-      <label class="avatar-btn" :class="{ disabled: isUploadingAvatar }">
+    <section class="content-card account-avatar">
+      <div class="account-avatar__preview">
+        <img class="account-avatar__image" :src="avatarPreview" alt="User avatar" />
+        <div>
+          <p class="account-avatar__title">Avatar</p>
+          <p class="account-avatar__hint">Choose an image that fits your public author profile.</p>
+        </div>
+      </div>
+
+      <label class="btn secondary account-avatar__button" :class="{ 'is-disabled': isUploadingAvatar }">
         {{ isUploadingAvatar ? 'Uploading...' : 'Upload Avatar' }}
         <input
           type="file"
@@ -28,43 +49,41 @@
           @change="handleAvatarChange"
         />
       </label>
+    </section>
+
+    <div class="surface-stack">
+      <form class="content-card field-card" @submit.prevent="submitField('nickname')">
+        <div class="field-card__header">
+          <div>
+            <p class="page-eyebrow">Display Name</p>
+            <h3>Nickname</h3>
+          </div>
+          <button type="submit" class="secondary" :disabled="isSubmittingField === 'nickname'">
+            {{ isSubmittingField === 'nickname' ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+        <label class="field-card__label" for="setting-nickname">
+          <span>Shown across your public profile and authored content</span>
+          <input id="setting-nickname" v-model.trim="nicknameInput" class="ui-input" type="text" maxlength="32" />
+        </label>
+      </form>
+
+      <form class="content-card field-card" @submit.prevent="submitField('bio')">
+        <div class="field-card__header">
+          <div>
+            <p class="page-eyebrow">Public Note</p>
+            <h3>Bio</h3>
+          </div>
+          <button type="submit" class="secondary" :disabled="isSubmittingField === 'bio'">
+            {{ isSubmittingField === 'bio' ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+        <label class="field-card__label" for="setting-bio">
+          <span>A short line about what you read, make, or publish</span>
+          <textarea id="setting-bio" v-model.trim="bioInput" class="ui-textarea" rows="4" maxlength="300" />
+        </label>
+      </form>
     </div>
-
-    <form class="field-row" @submit.prevent="submitField('username')">
-      <label for="setting-username">Username</label>
-      <div class="input-wrap">
-        <input id="setting-username" v-model.trim="usernameInput" type="text" maxlength="32" />
-        <button type="submit" :disabled="isSubmittingField === 'username'">
-          {{ isSubmittingField === 'username' ? 'Saving...' : 'Save' }}
-        </button>
-      </div>
-    </form>
-
-    <form class="field-row" @submit.prevent="submitField('email')">
-      <label for="setting-email">Email</label>
-      <div class="input-wrap">
-        <input id="setting-email" v-model.trim="emailInput" type="email" />
-        <button type="submit" :disabled="isSubmittingField === 'email'">
-          {{ isSubmittingField === 'email' ? 'Saving...' : 'Save' }}
-        </button>
-      </div>
-    </form>
-
-    <form class="field-row" @submit.prevent="submitField('password')">
-      <label for="setting-password">Password</label>
-      <div class="input-wrap">
-        <input
-          id="setting-password"
-          v-model="passwordInput"
-          type="password"
-          minlength="6"
-          placeholder="At least 6 characters"
-        />
-        <button type="submit" :disabled="isSubmittingField === 'password'">
-          {{ isSubmittingField === 'password' ? 'Saving...' : 'Save' }}
-        </button>
-      </div>
-    </form>
   </section>
 </template>
 
@@ -76,17 +95,19 @@ import { updateUserProfile, uploadAvatar } from '@/api/modules/user'
 import { useAuthStore } from '@/stores/auth'
 import type { UserProfile } from '@/types/user'
 
-type ProfileField = 'username' | 'email' | 'password'
+type ProfileField = 'nickname' | 'bio'
 
-defineProps<{
+const props = defineProps<{
   profile?: UserProfile | null
+}>()
+const emit = defineEmits<{
+  updated: [profile: UserProfile]
 }>()
 
 const authStore = useAuthStore()
 
-const usernameInput = ref('')
-const emailInput = ref('')
-const passwordInput = ref('')
+const nicknameInput = ref('')
+const bioInput = ref('')
 
 const isSubmittingField = ref<ProfileField | null>(null)
 const isUploadingAvatar = ref(false)
@@ -100,27 +121,27 @@ function resetMessages(): void {
   successMessage.value = ''
 }
 
-function validateEmail(value: string): boolean {
-  return /^\S+@\S+\.\S+$/.test(value)
-}
-
 function validateField(field: ProfileField, value: string): string {
-  if (!value) {
+  if (!value && field !== 'bio') {
     return 'Input cannot be empty.'
   }
 
-  if (field === 'email' && !validateEmail(value)) {
-    return 'Please enter a valid email address.'
-  }
-
-  if (field === 'password' && value.length < 6) {
-    return 'Password must be at least 6 characters.'
+  if (field === 'bio' && value.length > 300) {
+    return 'Bio must be 300 characters or fewer.'
   }
 
   return ''
 }
 
-async function updateField(payload: { username?: string; email?: string; password?: string; avatarUrl?: string }): Promise<void> {
+function syncProfileSummary(updatedUser: UserProfile): void {
+  emit('updated', updatedUser)
+}
+
+async function updateField(payload: {
+  nickname?: string
+  avatarUrl?: string
+  bio?: string
+}): Promise<void> {
   const userId = authStore.currentUser?.id
   if (!userId) {
     errorMessage.value = 'Unable to identify current user.'
@@ -128,15 +149,21 @@ async function updateField(payload: { username?: string; email?: string; passwor
   }
 
   const updatedUser = await updateUserProfile({
-    id: userId,
+    userId,
     ...payload,
   })
   authStore.updateCurrentUser(updatedUser)
+  syncProfileSummary({
+    id: updatedUser.id,
+    username: updatedUser.username ?? props.profile?.username ?? authStore.currentUser?.username ?? '',
+    nickname: updatedUser.nickname ?? props.profile?.nickname ?? authStore.currentUser?.nickname ?? '',
+    avatarUrl: updatedUser.avatarUrl ?? props.profile?.avatarUrl ?? authStore.currentUser?.avatarUrl ?? '',
+    bio: updatedUser.bio ?? props.profile?.bio ?? '',
+  })
 }
 
 async function submitField(field: ProfileField): Promise<void> {
-  const rawValue =
-    field === 'username' ? usernameInput.value : field === 'email' ? emailInput.value : passwordInput.value
+  const rawValue = field === 'nickname' ? nicknameInput.value : bioInput.value
 
   resetMessages()
   const validationError = validateField(field, rawValue.trim())
@@ -147,17 +174,12 @@ async function submitField(field: ProfileField): Promise<void> {
 
   isSubmittingField.value = field
   try {
-    if (field === 'username') {
-      await updateField({ username: usernameInput.value.trim() })
+    if (field === 'nickname') {
+      await updateField({ nickname: nicknameInput.value.trim() })
     }
 
-    if (field === 'email') {
-      await updateField({ email: emailInput.value.trim() })
-    }
-
-    if (field === 'password') {
-      await updateField({ password: passwordInput.value })
-      passwordInput.value = ''
+    if (field === 'bio') {
+      await updateField({ bio: bioInput.value.trim() })
     }
 
     successMessage.value = `${field} updated successfully.`
@@ -200,155 +222,114 @@ async function handleAvatarChange(event: Event): Promise<void> {
 }
 
 watch(
-  () => authStore.currentUser,
-  (currentUser) => {
-    usernameInput.value = currentUser?.username ?? ''
-    emailInput.value = currentUser?.email ?? ''
+  [() => props.profile, () => authStore.currentUser],
+  ([profile, currentUser]) => {
+    nicknameInput.value = profile?.nickname ?? currentUser?.nickname ?? ''
+    bioInput.value = profile?.bio ?? ''
   },
   { immediate: true },
 )
 </script>
 
 <style scoped>
-.panel {
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
+.account-panel,
+.account-panel__header,
+.account-summary,
+.account-summary__copy,
+.field-card,
+.field-card__label {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-16);
 }
 
-h2 {
-  margin: 0;
-  font-family: var(--font-display);
-}
-
-header p {
-  margin: 0.35rem 0 0;
-  color: var(--color-muted);
-}
-
-.avatar-section {
-  display: flex;
+.account-summary {
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 0.9rem;
 }
 
-.profile-summary {
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: #fcfdff;
-  padding: 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-}
-
-.summary-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 999px;
+.account-summary__avatar,
+.account-avatar__image {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
   object-fit: cover;
   border: 1px solid var(--color-border);
 }
 
-.summary-name,
-.summary-username,
-.summary-bio {
-  margin: 0;
-}
-
-.summary-name {
+.account-summary__name,
+.account-avatar__title {
+  font-size: var(--text-body-lg);
   font-weight: 700;
+  color: var(--color-text);
 }
 
-.summary-username,
-.summary-bio {
+.account-summary__username,
+.account-summary__bio,
+.account-avatar__hint {
   color: var(--color-muted);
 }
 
-.avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 999px;
-  object-fit: cover;
-  border: 1px solid var(--color-border);
+.account-panel__label {
+  color: var(--color-text-soft);
+  font-size: var(--text-meta);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
 }
 
-.avatar-btn {
-  border: 1px solid var(--color-border-strong);
-  border-radius: 10px;
-  padding: 0.45rem 0.8rem;
-  cursor: pointer;
+.account-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-16);
 }
 
-.avatar-btn input {
+.account-avatar__preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-16);
+}
+
+.account-avatar__button {
+  position: relative;
+  overflow: hidden;
+}
+
+.account-avatar__button input {
   display: none;
 }
 
-.avatar-btn.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.field-row {
-  display: grid;
-  gap: 0.4rem;
-}
-
-.field-row label {
-  font-weight: 600;
-}
-
-.input-wrap {
+.field-card__header {
   display: flex;
-  gap: 0.6rem;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-16);
 }
 
-.input-wrap input {
-  flex: 1;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
-}
-
-.input-wrap button {
-  border: 0;
-  border-radius: 10px;
-  background: var(--color-text);
-  color: var(--color-surface);
-  min-width: 88px;
-  cursor: pointer;
-}
-
-.input-wrap button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.success-text {
-  margin: 0;
-  color: #067647;
-  background: #ecfdf3;
-  border: 1px solid #abefc6;
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
-}
-
-.error-text {
-  margin: 0;
-  color: #b42318;
-  background: #fff2f2;
-  border: 1px solid #f6d0ce;
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
+.field-card__label > span {
+  color: var(--color-muted);
+  font-size: var(--text-body-sm);
 }
 
 @media (max-width: 768px) {
-  .input-wrap {
-    flex-direction: column;
+  .account-summary,
+  .account-avatar,
+  .account-avatar__preview,
+  .field-card__header {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .field-card__header {
+    justify-content: start;
+  }
+
+  .field-card__header button {
+    width: 100%;
+  }
+
+  .account-avatar__button {
+    width: 100%;
   }
 }
 </style>

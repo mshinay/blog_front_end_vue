@@ -118,6 +118,7 @@ describe('PersonCenterView', () => {
       },
     })
 
+    await flushPromises()
     await wrapper.get('button.tab-btn:nth-of-type(3)').trigger('click')
     await flushPromises()
 

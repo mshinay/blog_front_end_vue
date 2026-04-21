@@ -1,46 +1,75 @@
 <template>
-  <section class="panel">
-    <header>
+  <section class="panel-card articles-panel">
+    <div class="page-header">
+      <p class="page-eyebrow">Writing Shelf</p>
       <h2>My Articles</h2>
-      <p>Manage the articles you have published.</p>
-      <form class="search-form" @submit.prevent="submitSearch">
-        <input v-model.trim="keywordInput" type="text" placeholder="Search your articles" />
+      <p>Review what you have published, search your own writing, and jump into edit or delete actions.</p>
+    </div>
+
+    <form class="content-card articles-search" @submit.prevent="submitSearch">
+      <label class="articles-search__field" for="person-article-search">
+        <span>Search your articles</span>
+        <input
+          id="person-article-search"
+          v-model.trim="keywordInput"
+          class="ui-input"
+          type="text"
+          placeholder="Search your articles"
+        />
+      </label>
+      <div class="articles-search__actions">
         <button type="submit">Search</button>
-        <button type="button" class="ghost" @click="resetSearch">Reset</button>
-      </form>
-    </header>
+        <button type="button" class="secondary" @click="resetSearch">Reset</button>
+      </div>
+    </form>
 
-    <ul v-if="articles.length > 0" class="list">
-      <li v-for="article in articles" :key="article.id" class="item">
-        <RouterLink class="title" :to="`/article/${article.id}`">{{ article.title }}</RouterLink>
-        <p class="summary">{{ resolveSummary(article.summary) }}</p>
-        <p class="meta">{{ article.publishTime ?? '' }}</p>
-        <div class="actions">
-          <RouterLink
-            v-if="canEditArticle(authStore.currentUser, article)"
-            class="edit-link"
-            :to="`/edit-article/${article.id}`"
-          >
-            Edit
-          </RouterLink>
-          <button
-            v-if="canDeleteArticle(authStore.currentUser, article)"
-            type="button"
-            class="danger"
-            :disabled="deletingId === article.id"
-            @click="deleteOwnedArticle(article.id)"
-          >
-            {{ deletingId === article.id ? 'Deleting...' : 'Delete' }}
-          </button>
+    <div v-if="articles.length > 0" class="surface-stack">
+      <article v-for="article in articles" :key="article.id" class="content-card article-item">
+        <div class="article-item__header">
+          <div class="article-item__copy">
+            <RouterLink class="article-item__title" :to="`/article/${article.id}`">{{ article.title }}</RouterLink>
+            <p class="article-item__summary">{{ resolveSummary(article.summary) }}</p>
+          </div>
+          <span class="ui-pill ui-pill--status">{{ article.publishTime ?? 'Draft time unavailable' }}</span>
         </div>
-      </li>
-    </ul>
 
-    <EmptyState v-else-if="!isLoading && !errorMessage" message="You have not published any articles yet." />
-    <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+        <div class="article-item__footer">
+          <p class="article-item__meta">Published writing stays visible here for quick maintenance and revisits.</p>
+          <div class="article-item__actions">
+            <RouterLink
+              v-if="canEditArticle(authStore.currentUser, article)"
+              class="btn secondary"
+              :to="`/edit-article/${article.id}`"
+            >
+              Edit
+            </RouterLink>
+            <button
+              v-if="canDeleteArticle(authStore.currentUser, article)"
+              type="button"
+              class="danger"
+              :disabled="deletingId === article.id"
+              @click="deleteOwnedArticle(article.id)"
+            >
+              {{ deletingId === article.id ? 'Deleting...' : 'Delete' }}
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <EmptyState
+      v-else-if="!isLoading && !errorMessage"
+      eyebrow="Nothing Published"
+      title="Your writing shelf is empty."
+      message="Once you publish articles, they will appear here for maintenance and quick access."
+    />
+    <p v-if="errorMessage" class="error-text">
+      {{ errorMessage }}
+      <button v-if="hasLoadError" type="button" class="secondary btn-sm" @click="retryLoadMore">Retry</button>
+    </p>
     <LoadingState v-if="isLoading" />
 
-    <p v-if="allLoaded && articles.length > 0" class="end-text">No more articles.</p>
+    <p v-if="allLoaded && articles.length > 0" class="muted-text articles-panel__end">No more articles.</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
@@ -67,16 +96,28 @@ const page = ref(1)
 const isLoading = ref(false)
 const allLoaded = ref(false)
 const errorMessage = ref('')
+const hasLoadError = ref(false)
 const deletingId = ref<number | null>(null)
 const sentinelRef = ref<HTMLElement | null>(null)
 
-const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
+const observerEnabled = computed(() => !isLoading.value && !allLoaded.value && !hasLoadError.value)
 
 function resetState(): void {
   articles.value = []
   page.value = 1
   allLoaded.value = false
   errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function clearLoadError(): void {
+  errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function retryLoadMore(): void {
+  clearLoadError()
+  void loadMore()
 }
 
 function resolveSummary(summary?: string): string {
@@ -104,12 +145,12 @@ async function loadMore(): Promise<void> {
     return
   }
 
-  if (isLoading.value || allLoaded.value) {
+  if (isLoading.value || allLoaded.value || hasLoadError.value) {
     return
   }
 
   isLoading.value = true
-  errorMessage.value = ''
+  clearLoadError()
   try {
     const result = await getArticleList(buildArticleQuery(userId, page.value))
 
@@ -122,6 +163,7 @@ async function loadMore(): Promise<void> {
     articles.value.push(...records)
     page.value += 1
   } catch (error) {
+    hasLoadError.value = true
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
@@ -181,128 +223,55 @@ useInfiniteScroll(sentinelRef, loadMore, {
 </script>
 
 <style scoped>
-.panel {
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
+.articles-panel,
+.articles-search,
+.articles-search__field,
+.article-item,
+.article-item__copy {
   display: grid;
-  gap: 0.9rem;
+  gap: var(--space-16);
 }
 
-h2 {
-  margin: 0;
-  font-family: var(--font-display);
-}
-
-header p {
-  margin: 0.35rem 0 0;
+.articles-search__field > span {
   color: var(--color-muted);
+  font-size: var(--text-body-sm);
+  font-weight: 600;
 }
 
-.search-form {
-  margin-top: 0.8rem;
+.articles-search__actions,
+.article-item__actions,
+.article-item__footer {
   display: flex;
-  gap: 0.6rem;
+  align-items: center;
+  gap: var(--space-12);
 }
 
-.search-form input {
-  flex: 1;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
+.article-item__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-16);
 }
 
-.search-form button {
-  border: 0;
-  border-radius: 10px;
-  background: var(--color-text);
-  color: var(--color-surface);
-  padding: 0.55rem 0.9rem;
-  cursor: pointer;
-}
-
-.search-form button.ghost {
-  background: transparent;
-  color: var(--color-text);
-  border: 1px solid var(--color-border-strong);
-}
-
-.list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 0.7rem;
-}
-
-.item {
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: #fcfdff;
-  padding: 0.8rem;
-  display: grid;
-  gap: 0.45rem;
-}
-
-.title {
-  text-decoration: none;
+.article-item__title {
+  font-size: var(--text-card-title);
   font-weight: 700;
-}
-
-.summary {
-  margin: 0;
-  color: var(--color-muted);
-  line-height: 1.6;
-}
-
-.meta {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 0.86rem;
-}
-
-.actions {
-  display: flex;
-  gap: 0.6rem;
-}
-
-.edit-link {
   text-decoration: none;
-  border-radius: 999px;
-  border: 1px solid var(--color-border-strong);
-  color: var(--color-text);
-  padding: 0.3rem 0.8rem;
 }
 
-.danger {
-  border: 0;
-  border-radius: 999px;
-  background: #ffebe9;
-  color: #9a2518;
-  padding: 0.35rem 0.8rem;
-  cursor: pointer;
-}
-
-.danger:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.error-text {
-  margin: 0;
-  color: #b42318;
-  border: 1px solid #f6d0ce;
-  border-radius: 10px;
-  background: #fff2f2;
-  padding: 0.6rem 0.75rem;
-}
-
-.end-text {
-  margin: 0;
-  text-align: center;
+.article-item__summary,
+.article-item__meta {
   color: var(--color-muted);
+}
+
+.article-item__footer {
+  justify-content: space-between;
+  padding-top: var(--space-16);
+  border-top: 1px solid var(--color-divider);
+}
+
+.articles-panel__end {
+  text-align: center;
 }
 
 .sentinel {
@@ -310,8 +279,16 @@ header p {
 }
 
 @media (max-width: 768px) {
-  .search-form {
-    flex-wrap: wrap;
+  .articles-search__actions,
+  .article-item__header,
+  .article-item__footer,
+  .article-item__actions {
+    display: grid;
+  }
+
+  .articles-search__actions > *,
+  .article-item__actions > * {
+    width: 100%;
   }
 }
 </style>

@@ -1,32 +1,40 @@
 <template>
-  <section class="panel">
-    <header>
+  <section class="panel-card comments-panel">
+    <div class="page-header">
+      <p class="page-eyebrow">Discussion Archive</p>
       <h2>My Comments</h2>
-      <p>Review and maintain your comment history.</p>
-      <p class="notice">Non-standard API dependency: this panel still relies on legacy user comment endpoints because no standard user comment list API is defined in the interface document.</p>
-      <form class="search-form" @submit.prevent="submitSearch">
-        <input v-model.trim="keywordInput" type="text" placeholder="Search your comments" />
-        <button type="submit">Search</button>
-        <button type="button" class="ghost" @click="resetSearch">Reset</button>
-      </form>
-    </header>
+      <p>Review your discussion history, edit what you have written, and return to the articles behind each exchange.</p>
+    </div>
 
-    <ul v-if="comments.length > 0" class="list">
-      <li v-for="comment in comments" :key="comment.id" class="item">
-        <p class="meta">
+    <form class="content-card comments-search" @submit.prevent="submitSearch">
+      <label class="comments-search__field" for="person-comment-search">
+        <span>Search your comments</span>
+        <input
+          id="person-comment-search"
+          v-model.trim="keywordInput"
+          class="ui-input"
+          type="text"
+          placeholder="Search your comments"
+        />
+      </label>
+      <div class="comments-search__actions">
+        <button type="submit">Search</button>
+        <button type="button" class="secondary" @click="resetSearch">Reset</button>
+      </div>
+    </form>
+
+    <div v-if="comments.length > 0" class="surface-stack">
+      <article v-for="comment in comments" :key="comment.id" class="content-card comment-item">
+        <p class="comment-item__meta">
           <RouterLink :to="`/article/${comment.articleId}`">Article #{{ comment.articleId }}</RouterLink>
           <span>{{ comment.createTime ?? '' }}</span>
         </p>
 
-        <div v-if="editingId === comment.id" class="editor-wrap">
-          <textarea v-model.trim="editingContent" rows="4" />
-          <div class="editor-actions">
-            <button type="button" class="ghost" @click="cancelEdit">Cancel</button>
-            <button
-              type="button"
-              :disabled="savingId === comment.id"
-              @click="saveEdit(comment.id)"
-            >
+        <div v-if="editingId === comment.id" class="comment-item__editor">
+          <textarea v-model.trim="editingContent" class="ui-textarea" rows="4" />
+          <div class="comment-item__actions">
+            <button type="button" class="secondary" @click="cancelEdit">Cancel</button>
+            <button type="button" :disabled="savingId === comment.id" @click="saveEdit(comment.id)">
               {{ savingId === comment.id ? 'Saving...' : 'Save' }}
             </button>
           </div>
@@ -34,9 +42,9 @@
 
         <template v-else>
           <!-- eslint-disable-next-line vue/no-v-html -->
-          <div class="content" v-html="renderMarkdown(comment.content)" />
-          <div class="actions">
-            <button type="button" class="ghost" @click="startEdit(comment)">Edit</button>
+          <div class="comment-item__content" v-html="renderMarkdown(comment.content)" />
+          <div class="comment-item__actions">
+            <button type="button" class="secondary" @click="startEdit(comment)">Edit</button>
             <button
               type="button"
               class="danger"
@@ -47,14 +55,22 @@
             </button>
           </div>
         </template>
-      </li>
-    </ul>
+      </article>
+    </div>
 
-    <EmptyState v-else-if="!isLoading && !errorMessage" message="You have not posted comments yet." />
-    <p v-if="errorMessage" class="error-text">{{ errorMessage }}</p>
+    <EmptyState
+      v-else-if="!isLoading && !errorMessage"
+      eyebrow="No Discussion Yet"
+      title="Your comment archive is empty."
+      message="Once you join article discussions, your messages will appear here for revisits and edits."
+    />
+    <p v-if="errorMessage" class="error-text">
+      {{ errorMessage }}
+      <button v-if="hasLoadError" type="button" class="secondary btn-sm" @click="retryLoadMore">Retry</button>
+    </p>
     <LoadingState v-if="isLoading" />
 
-    <p v-if="allLoaded && comments.length > 0" class="end-text">No more comments.</p>
+    <p v-if="allLoaded && comments.length > 0" class="muted-text comments-panel__end">No more comments.</p>
     <div ref="sentinelRef" class="sentinel" aria-hidden="true" />
   </section>
 </template>
@@ -77,9 +93,8 @@ import type { CommentItem } from '@/types/comment'
 import { renderMarkdown } from '@/utils/markdown'
 
 const authStore = useAuthStore()
-// Non-standard API dependency point:
-// the interface document does not define a standard user-comment list endpoint,
-// so this panel intentionally stays on legacy user comment APIs.
+// API note: user-comment listing/search still depends on legacy endpoints because
+// the standardized interface docs do not define an equivalent user-comment list API.
 
 const keywordInput = ref('')
 const activeKeyword = ref('')
@@ -89,19 +104,31 @@ const pageSize = 10
 const isLoading = ref(false)
 const allLoaded = ref(false)
 const errorMessage = ref('')
+const hasLoadError = ref(false)
 const deletingId = ref<number | null>(null)
 const editingId = ref<number | null>(null)
 const savingId = ref<number | null>(null)
 const editingContent = ref('')
 const sentinelRef = ref<HTMLElement | null>(null)
 
-const observerEnabled = computed(() => !isLoading.value && !allLoaded.value)
+const observerEnabled = computed(() => !isLoading.value && !allLoaded.value && !hasLoadError.value)
 
 function resetState(): void {
   comments.value = []
   page.value = 1
   allLoaded.value = false
   errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function clearLoadError(): void {
+  errorMessage.value = ''
+  hasLoadError.value = false
+}
+
+function retryLoadMore(): void {
+  clearLoadError()
+  void loadMore()
 }
 
 async function loadMore(): Promise<void> {
@@ -112,12 +139,12 @@ async function loadMore(): Promise<void> {
     return
   }
 
-  if (isLoading.value || allLoaded.value) {
+  if (isLoading.value || allLoaded.value || hasLoadError.value) {
     return
   }
 
   isLoading.value = true
-  errorMessage.value = ''
+  clearLoadError()
   try {
     const result = activeKeyword.value
       ? await searchUserComments(userId, activeKeyword.value, page.value, pageSize)
@@ -132,6 +159,7 @@ async function loadMore(): Promise<void> {
     comments.value.push(...records)
     page.value += 1
   } catch (error) {
+    hasLoadError.value = true
     if (error instanceof AppError) {
       errorMessage.value = error.message
     } else {
@@ -231,151 +259,47 @@ useInfiniteScroll(sentinelRef, loadMore, {
 </script>
 
 <style scoped>
-.panel {
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
+.comments-panel,
+.comments-search,
+.comments-search__field,
+.comment-item,
+.comment-item__editor {
   display: grid;
-  gap: 0.9rem;
+  gap: var(--space-16);
 }
 
-h2 {
-  margin: 0;
-  font-family: var(--font-display);
-}
-
-header p {
-  margin: 0.35rem 0 0;
+.comments-search__field > span {
   color: var(--color-muted);
-}
-
-.notice {
-  margin-top: 0.6rem;
-  border: 1px solid var(--color-border);
-  border-radius: 10px;
-  background: #fff8e8;
-  color: #8a5a00;
-  padding: 0.65rem 0.75rem;
-}
-
-.search-form {
-  margin-top: 0.8rem;
-  display: flex;
-  gap: 0.6rem;
-}
-
-.search-form input {
-  flex: 1;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
-}
-
-.search-form button {
-  border: 0;
-  border-radius: 10px;
-  background: var(--color-text);
-  color: var(--color-surface);
-  padding: 0.55rem 0.9rem;
-  cursor: pointer;
-}
-
-.search-form button.ghost {
-  background: transparent;
-  color: var(--color-text);
-  border: 1px solid var(--color-border-strong);
-}
-
-.list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.65rem;
-}
-
-.item {
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: #fcfdff;
-  padding: 0.8rem;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.meta {
-  margin: 0;
-  color: var(--color-muted);
-  font-size: 0.88rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.meta a {
-  text-decoration: none;
+  font-size: var(--text-body-sm);
   font-weight: 600;
 }
 
-.content {
-  line-height: 1.7;
-}
-
-.actions,
-.editor-actions {
+.comments-search__actions,
+.comment-item__actions,
+.comment-item__meta {
   display: flex;
-  gap: 0.55rem;
+  align-items: center;
+  gap: var(--space-12);
 }
 
-button {
-  border: 0;
-  border-radius: 8px;
-  background: var(--color-text);
-  color: var(--color-surface);
-  padding: 0.35rem 0.75rem;
-  cursor: pointer;
-}
-
-button.ghost {
-  background: transparent;
-  color: var(--color-text);
-  border: 1px solid var(--color-border-strong);
-}
-
-button.danger {
-  background: #ffebe9;
-  color: #9a2518;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.editor-wrap textarea {
-  width: 100%;
-  border: 1px solid var(--color-border-strong);
-  border-radius: 10px;
-  padding: 0.55rem 0.7rem;
-  resize: vertical;
-}
-
-.error-text {
-  margin: 0;
-  color: #b42318;
-  border: 1px solid #f6d0ce;
-  border-radius: 10px;
-  background: #fff2f2;
-  padding: 0.6rem 0.75rem;
-}
-
-.end-text {
-  margin: 0;
-  text-align: center;
+.comment-item__meta {
+  justify-content: space-between;
+  flex-wrap: wrap;
   color: var(--color-muted);
+  font-size: var(--text-meta);
+}
+
+.comment-item__meta a {
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.comment-item__content {
+  line-height: var(--line-reading);
+}
+
+.comments-panel__end {
+  text-align: center;
 }
 
 .sentinel {
@@ -383,8 +307,14 @@ button:disabled {
 }
 
 @media (max-width: 768px) {
-  .search-form {
-    flex-wrap: wrap;
+  .comments-search__actions,
+  .comment-item__actions {
+    display: grid;
+  }
+
+  .comments-search__actions > *,
+  .comment-item__actions > * {
+    width: 100%;
   }
 }
 </style>

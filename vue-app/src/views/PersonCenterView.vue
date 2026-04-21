@@ -1,48 +1,85 @@
 <template>
-  <section class="person-page">
-    <header>
-      <h1>Personal Center</h1>
-      <p>Manage your profile and your own content.</p>
-    </header>
-
+  <section class="page-shell page-shell--wide person-page">
     <LoadingState v-if="isProfileLoading" />
     <p v-else-if="profileError" class="error-text">{{ profileError }}</p>
-    <section v-else-if="profile" class="profile-card">
-      <img :src="profile.avatarUrl || '/vite.svg'" alt="Current user avatar" />
-      <div>
-        <h2>{{ profile.nickname || profile.username }}</h2>
-        <p class="username">@{{ profile.username }}</p>
-        <p>{{ profile.bio || 'You have not added a bio yet.' }}</p>
-      </div>
+    <section v-else class="surface-stack">
+      <section class="hero-surface person-hero">
+        <div class="person-hero__intro">
+          <p class="page-eyebrow">Author Space</p>
+          <div class="person-hero__heading">
+            <h1>{{ displayName }}</h1>
+            <p>
+              A quieter place to manage your public profile, review what you have published, and
+              keep your discussions close at hand.
+            </p>
+          </div>
+
+          <div v-if="profile" class="person-hero__identity">
+            <img
+              class="person-hero__avatar"
+              :src="profile.avatarUrl || '/vite.svg'"
+              alt="Current user avatar"
+            />
+            <div class="person-hero__copy">
+              <p class="person-hero__username">@{{ profile.username }}</p>
+              <p class="person-hero__bio">{{ profile.bio || 'Shape this space with a short bio and a recognizable profile.' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-grid person-hero__stats">
+          <article class="stats-tile">
+            <span class="person-hero__stat-label">Current focus</span>
+            <strong>{{ activeTabLabel }}</strong>
+            <p>{{ activeTabDescription }}</p>
+          </article>
+          <article class="stats-tile">
+            <span class="person-hero__stat-label">Profile status</span>
+            <strong>{{ profile?.bio ? 'Profile in shape' : 'Needs a short bio' }}</strong>
+            <p>
+              {{ profile?.bio ? 'Your public presence already carries your voice across the app.' : 'A short bio helps your comments and posts feel authored.' }}
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel-card person-shell">
+        <nav class="person-tabs" aria-label="Personal center sections">
+          <button
+            v-for="tab in tabs"
+            :key="tab"
+            type="button"
+            class="tab-btn person-tabs__button"
+            :class="{ active: activeTab === tab }"
+            @click="switchTab(tab)"
+          >
+            <span class="person-tabs__label">{{ tabLabelMap[tab] }}</span>
+            <small class="person-tabs__hint">{{ tabHintMap[tab] }}</small>
+          </button>
+        </nav>
+
+        <section class="person-shell__panel">
+          <AccountSettingsPanel
+            v-if="activeTab === 'account'"
+            :profile="profile"
+            @updated="updateProfile"
+          />
+          <MyArticlesPanel v-else-if="activeTab === 'articles'" />
+          <MyCommentsPanel v-else />
+        </section>
+      </section>
     </section>
-
-    <nav class="tabs" aria-label="Personal center sections">
-      <button
-        v-for="tab in tabs"
-        :key="tab"
-        type="button"
-        class="tab-btn"
-        :class="{ active: activeTab === tab }"
-        @click="switchTab(tab)"
-      >
-        {{ tabLabelMap[tab] }}
-      </button>
-    </nav>
-
-    <AccountSettingsPanel v-if="activeTab === 'account'" :profile="profile" />
-    <MyArticlesPanel v-else-if="activeTab === 'articles'" />
-    <MyCommentsPanel v-else />
   </section>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { AppError } from '@/api/client'
 import { getPublicUser } from '@/api/modules/user'
-import AccountSettingsPanel from '@/components/person/AccountSettingsPanel.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
+import AccountSettingsPanel from '@/components/person/AccountSettingsPanel.vue'
 import MyArticlesPanel from '@/components/person/MyArticlesPanel.vue'
 import MyCommentsPanel from '@/components/person/MyCommentsPanel.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -59,11 +96,28 @@ const tabLabelMap: Record<PersonTab, string> = {
   articles: 'My Blogs',
   comments: 'My Comments',
 }
+const tabHintMap: Record<PersonTab, string> = {
+  account: 'Profile, avatar, and bio',
+  articles: 'Published writing and actions',
+  comments: 'Discussion history and edits',
+}
+const tabDescriptionMap: Record<PersonTab, string> = {
+  account: 'Refresh your public author profile and keep your presentation current.',
+  articles: 'Review published work, revisit summaries, and manage article actions.',
+  comments: 'Track your reading conversations, edits, and reply history in one place.',
+}
 
 const activeTab = ref<PersonTab>('account')
 const profile = ref<UserProfile | null>(null)
 const isProfileLoading = ref(false)
 const profileError = ref('')
+
+const displayName = computed(() => {
+  return profile.value?.nickname || profile.value?.username || authStore.currentUser?.nickname || 'Personal Center'
+})
+
+const activeTabLabel = computed(() => tabLabelMap[activeTab.value])
+const activeTabDescription = computed(() => tabDescriptionMap[activeTab.value])
 
 async function loadProfile(): Promise<void> {
   const userId = authStore.currentUser?.id
@@ -100,6 +154,10 @@ async function switchTab(tab: PersonTab): Promise<void> {
   })
 }
 
+function updateProfile(nextProfile: UserProfile): void {
+  profile.value = nextProfile
+}
+
 watch(
   () => route.query.tab,
   (tabQuery) => {
@@ -127,80 +185,137 @@ watch(
 
 <style scoped>
 .person-page {
+  gap: var(--space-24);
+}
+
+.person-hero {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-24);
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  align-items: start;
 }
 
-h1 {
-  margin: 0;
-  font-family: var(--font-display);
+.person-hero__intro,
+.person-hero__heading,
+.person-hero__identity {
+  display: grid;
+  gap: var(--space-12);
 }
 
-h2 {
-  margin: 0;
-  font-family: var(--font-display);
-}
-
-header p {
-  margin: 0.4rem 0 0;
+.person-hero__heading p {
+  max-width: 42rem;
+  font-size: var(--text-body-lg);
   color: var(--color-muted);
 }
 
-.profile-card {
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
-  padding: 1rem;
-  display: flex;
+.person-hero__identity {
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 0.85rem;
+  padding-top: var(--space-12);
+  border-top: 1px solid var(--color-divider);
 }
 
-.profile-card img {
-  width: 68px;
-  height: 68px;
-  border-radius: 999px;
+.person-hero__avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
   object-fit: cover;
   border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
 }
 
-.profile-card p {
-  margin: 0.35rem 0 0;
+.person-hero__copy {
+  display: grid;
+  gap: var(--space-8);
+}
+
+.person-hero__username {
+  color: var(--color-text-soft);
+  font-weight: 700;
+}
+
+.person-hero__bio {
   color: var(--color-muted);
 }
 
-.profile-card .username {
-  font-weight: 600;
+.person-hero__stats {
+  grid-template-columns: 1fr;
 }
 
-.error-text {
-  margin: 0;
-  color: #b42318;
-  border: 1px solid #f6d0ce;
-  border-radius: 10px;
-  background: #fff2f2;
-  padding: 0.6rem 0.75rem;
+.person-hero__stat-label {
+  color: var(--color-text-soft);
+  font-size: var(--text-meta);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
 }
 
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
+.person-shell {
+  display: grid;
+  gap: var(--space-24);
 }
 
-.tab-btn {
-  border: 1px solid var(--color-border-strong);
-  border-radius: 999px;
-  background: #fff;
+.person-tabs {
+  display: grid;
+  gap: var(--space-12);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.person-tabs__button {
+  min-height: 0;
+  padding: var(--space-16);
+  border-radius: var(--radius-lg);
+  border-color: var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 92%, white);
   color: var(--color-text);
-  padding: 0.38rem 0.85rem;
-  cursor: pointer;
+  box-shadow: inset 0 -1px 0 rgba(31, 42, 51, 0.03);
+  display: grid;
+  justify-items: start;
+  gap: var(--space-6);
+  text-align: left;
 }
 
-.tab-btn.active {
-  border-color: var(--color-text);
-  background: var(--color-text);
-  color: var(--color-surface);
+.person-tabs__button:hover {
+  background: var(--color-surface-soft);
+}
+
+.person-tabs__button.active {
+  border-color: var(--color-accent-soft);
+  background: linear-gradient(180deg, rgba(234, 216, 203, 0.62) 0%, rgba(251, 248, 242, 0.96) 100%);
+  color: var(--color-text);
+}
+
+.person-tabs__label {
+  font-size: var(--text-body);
+  font-weight: 700;
+}
+
+.person-tabs__hint {
+  color: var(--color-muted);
+  line-height: var(--line-meta);
+}
+
+.person-shell__panel {
+  display: grid;
+}
+
+@media (max-width: 1024px) {
+  .person-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .person-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .person-tabs__button {
+    padding: var(--space-12);
+  }
+
+  .person-hero__identity {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
